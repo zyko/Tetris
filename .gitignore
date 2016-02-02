@@ -31,6 +31,10 @@
 Tetris/Debug/*
 Debug/*
 
+# single data
+Tetris.sdf
+Tetris.v12.suo
+
 # Windows image file caches
 Thumbs.db
 ehthumbs.db
