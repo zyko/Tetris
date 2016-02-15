@@ -1,281 +1,336 @@
+#pragma once
+
 #include <SFML/Graphics.hpp>
+#include <SFML/Audio.hpp>
+
+#include "GameLogic.h"
+#include "Tetromino.h"
+#include "AI.h"
+
+#include <memory>
 #include <vector>
+#include <stdio.h>
+#include <windows.h>
+#include <thread>
+
+
 using namespace std;
 
+sf::Sprite redBlockSprite;
+sf::Sprite nextTetSprt;
 
-//remember:
-// row = X = mapHeight = 22;
-// column = Y = mapWidth = 10
+sf::Text levelText;
+sf::Text scoreText;
 
-struct tetrominoTryAbstract
+GameLogic* gameLogic;
+AI* ai;
+
+unique_ptr<thread> threadAI;
+
+const float tileOffset = 40.f;
+
+sf::RenderWindow window(sf::VideoMode(806, 1046), "My window");
+
+
+void drawInterface()
 {
-	int typeOftetromino;
-	int shapeSizeRow;
-	int shapeSizeColumn;
-	int bar;
-	vector < int > topleft = { 0, 4 };
-
-	/*
-	vector < vector<int> > shape = {	vector <int> { 0, 0, 0, 0 },
-										vector <int> { 0, 0, 0, 0 },
-										vector <int> { 0, 0, 0, 0 },
-										vector <int> { 0, 0, 0, 0 } };
-	*/
-
-
-	vector < vector<int> > shape;
-
+	if (gameLogic->getScore() > 10000)
+		scoreText.setPosition(sf::Vector2f(547.f, 655.f));
+	else if (gameLogic->getScore() > 1000)
+		scoreText.setPosition(sf::Vector2f(555.f, 655.f));
+	else if (gameLogic->getScore() > 100)
+		scoreText.setPosition(sf::Vector2f(570.f, 655.f));
+	else if (gameLogic->getScore() > 10)
+		scoreText.setPosition(sf::Vector2f(585.f, 655.f));
 	
 
-	//shape.resize(a, vector<int>(b, initialValue));
+	scoreText.setString(to_string(gameLogic->getScore()));
+	levelText.setString(to_string(gameLogic->getLevel()));
+	
+	window.draw(scoreText);
+	window.draw(levelText);
+	window.draw(nextTetSprt);
+}
 
-	/*
-	shape = {	{ 0, 0, 0, 0 },
-				{ 0, 0, 0, 0 },
-				{ 0, 0, 0, 0 },
-				{ 0, 0, 0, 0 } };
-
-	shape[0] = vector<int>(0, 0, 0, 0);
-	*/
-
-	tetrominoTryAbstract() : bar(3)
-	{
-		//vector < int > topleft = { 0, 4 };
-
-		//vector < vector<int> > shape(4, vector<int>(4));
-
-		int a = 4;
-		int b = 4;
-		int initialValue = 0;
-
-		shape.resize(a, vector<int>(b, initialValue));
-
-		switch (typeOftetromino)
-		{
-			case 0: // = 'I': // supposed to be: 4, 1
-				shape = {	{ 0, 0, 1, 0 },
-							{ 0, 0, 1, 0 },
-							{ 0, 0, 1, 0 },
-							{ 0, 0, 1, 0 } };
-				break;
-			case 1: //'O': // supposed to be: 2, 2
-				shape = {	{ 0, 0, 0, 0 },
-							{ 0, 1, 1, 0 },
-							{ 0, 1, 1, 0 },
-							{ 0, 0, 0, 0 } };
-				break;
-			case 2: //'J':
-				shape = {	{ 0, 0, 1, 0 },
-							{ 0, 0, 1, 0 },
-							{ 0, 1, 1, 0 },
-							{ 0, 0, 0, 0 } };
-				break;
-			case 3: //'L':
-				shape = {	{ 0, 1, 0, 0 },
-							{ 0, 1, 0, 0 },
-							{ 0, 1, 1, 0 },
-							{ 0, 0, 0, 0 } };
-				break;
-			case 4: //'S':
-				shape = {	{ 0, 0, 0, 0 },
-							{ 0, 1, 1, 0 },
-							{ 1, 1, 0, 0 },
-							{ 0, 0, 0, 0 } };
-				break;
-			case 5: //'Z':
-				shape = {	{ 0, 0, 0, 0 },
-							{ 0, 1, 1, 0 },
-							{ 0, 0, 1, 1 },
-							{ 0, 0, 0, 0 } };
-				break;
-			case 6: //'T':
-				shape = {	{ 0, 0, 0, 0 },
-							{ 0, 1, 1, 1 },
-							{ 0, 0, 1, 0 },
-							{ 0, 0, 0, 0 } };
-				break;
-
-		}
-
-	}
-};
-
-// trying stuff, prolly wont need it anymore
-struct tetrominoI
+// draws the current Tetromino with data from gamelogic
+void drawCurrentTetro()
 {
-	vector < vector<int> > shape;
+	if (!gameLogic->getGameOver())
+		for (int row = 0; row < 4; ++row)
+			for (int col = 0; col < 4; ++col)
+				if (gameLogic->getCurrentTetromino()->getShape()[row][col] != 0)
+				{
+					window.draw(redBlockSprite);
+					redBlockSprite.setPosition(sf::Vector2f(gameLogic->getCurrentTetromino()->topLeft[1] * tileOffset + col * tileOffset,
+															gameLogic->getCurrentTetromino()->topLeft[0] * tileOffset + row * tileOffset));
+				}
+}
 
-	int size;
-	int height;
-};
-struct tetrominoO
+// draws landed array with data from gamelogic
+void drawLandedArray()
 {
-	vector < vector<int> > shape;
+	//printf("drawing landed array is called \n");
+	for (int row = 0; row < gameLogic->getMapHeight(); ++row)
+		for (int col = 0; col < gameLogic->getMapWidth(); ++col)
+			if (gameLogic->getLandedMatrix()[row][col] != 0)
+			{
+				window.draw(redBlockSprite);
+				redBlockSprite.setPosition(sf::Vector2f(col * tileOffset, row * tileOffset));
+			} 
+}
 
-
-	int size;
-	int height;
-};
-struct tetrominoJ
+void secondThreadAI()
 {
-	vector < vector<int> > shape;
+	ai->makeDecision(false);
+}
 
-
-	int size;
-	int height;
-};
-struct tetrominoL
+void start()
 {
-	vector < vector<int> > shape;
+	threadAI = std::unique_ptr<std::thread>(new std::thread(secondThreadAI));
+}
 
-
-	int size;
-	int height;
-};
-struct tetrominoS
+void stop()
 {
-	vector < vector<int> > shape;
-
-
-	int size;
-	int height;
-};
-struct tetrominoZ
-{
-	vector < vector<int> > shape;
-
-
-	int size;
-	int height;
-};
-struct tetrominoT
-{
-	vector < vector<int> > shape;
-
-
-	int size;
-	int height;
-};
-// <<<<
-
-
-
-int mapHeight = 22;
-int mapWidth = 10;
-
-vector< vector<int> > landed( mapHeight, vector<int>(mapWidth) );
-
+	threadAI->join();
+}
 
 int main()
 {
+	#pragma region set cmd size
+	COORD c;
+	c.X = 200; //  Zeichen/Zeile
+	c.Y = 1000; //  Zeilen
+	SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE), c);
+	#pragma endregion
+
 	sf::Clock clock; // starts the clock
-	sf::RenderWindow window(sf::VideoMode(800, 600), "My window"); //sf::Style::None);
-	//sf::CircleShape shape(100.f);
-	//shape.setFillColor(sf::Color::Green);
+	sf::Clock frameRateClock;
+	
+	bool pause = false;
+
+	gameLogic = new GameLogic();
+	ai = new AI(gameLogic);
+	gameLogic->setAI(ai);
+
+	ai->makeDecision(true);
+	ai->moveTetromino();
+	ai->makeDecision(false);
+	//Launch a thread
+	//thread threadAI(secondThreadAI);
+
+	bool AIisTurnedOn = true;
+
+	
+
+	/* initialize random seed: */
+	srand(time(NULL));
 
 
+	#pragma region sprites
+
+		// BACKGROUND
+		sf::Texture backgroundTxt;
+		backgroundTxt.loadFromFile("background.png");
+
+		sf::Sprite backgroundSprt;
+		backgroundSprt.setTexture(backgroundTxt);
 
 
-#pragma region text stuff / aint workin
-	sf::Text text;
-	sf::Font font;
-	if (!font.loadFromFile("comic.ttf"))
-	{
-		//error
-	}
-	string s = "hello world";
-	text.setCharacterSize(50);
-	text.setString("hello world");
-	text.setColor(sf::Color::White);
-#pragma endregion
+		// GAME OVER
+		
+		sf::Texture gameOverTxt;
+		gameOverTxt.loadFromFile("gameOver.png");
 
-	// creating tmp tetromino
-	tetrominoTryAbstract *tmp = {};
-	tmp->typeOftetromino = 1;
+		sf::Sprite gameOverSprt;
+		gameOverSprt.setTexture(gameOverTxt);
+		
 
-	// initializing landed array with 0s
-	for (int i = 0; i < mapHeight; ++i)
-		for (int n = 0; n < mapWidth; ++n)
-			landed[i][n] = 0;
+		// NEXT TETROMINO
+		sf::Texture nextTetText;
+		if (!nextTetText.loadFromFile("T1.png"))
+		{
+			printf("ERROR");
+		}
+		nextTetSprt.setTexture(nextTetText);
+		nextTetSprt.setPosition(sf::Vector2f(545.f, 210.f)); // absolute position
+		nextTetSprt.rotate(0); // offset relative to the current angle
 
-	// filling bottom line with 1s
-	for (int i = 0; i < mapWidth; ++i)
-	{
-		landed[mapHeight-1][i] = 1;
-	}
+
+		// SPRITE FOR LANDED ARRAY
+		sf::Texture redBlockTexture;
+		if (!redBlockTexture.loadFromFile("Red_Block.png"))
+		{
+			printf("ERROR");
+		}
+		redBlockSprite.setTexture(redBlockTexture);
+
+
+	#pragma endregion
+
+	#pragma region texts
+
+		sf::Font font;
+		if (!font.loadFromFile("courbd.ttf")) // should be courier new
+		{
+			printf("ERROR");
+		}
+		levelText.setFont(font);
+		levelText.setCharacterSize(40);
+		levelText.setString("2");
+		levelText.setColor(sf::Color::White);
+		levelText.setPosition(sf::Vector2f(595.f, 835.f));
+	
+		scoreText.setFont(font);
+		scoreText.setCharacterSize(40);
+		scoreText.setString("10000");
+		scoreText.setColor(sf::Color::White);
+		scoreText.setPosition(sf::Vector2f(595.f, 655.f));
+
+	#pragma endregion
+
+	// currently disabled
+	#pragma region audio
+
+	sf::Music music;
+	if (!music.openFromFile("tetris_theme.wav"))
+		printf("ERROR while loading tetris_theme");
+	//music.play();
+	music.setVolume(20);
+	music.setLoop(true);
+
+	#pragma endregion
+
 
 	while (window.isOpen())
 	{
+
+		#pragma region SFML event stuff + keyboard events
 		sf::Event event;
-		while (window.pollEvent(event))
+		while (window.pollEvent(event) )
 		{
 			if (event.type == sf::Event::Closed)
 				window.close();
+			if (event.key.code == sf::Keyboard::Escape)
+				window.close();
+
+			if (event.type == sf::Event::KeyPressed && !gameLogic->getGameOver() && !AIisTurnedOn)
+			{
+				if (event.key.code == sf::Keyboard::Right)
+					gameLogic->moveRight();
+						//drawCurrentTetro();
+
+				if (event.key.code == sf::Keyboard::Left)
+					gameLogic->moveLeft();
+						//drawCurrentTetro();
+
+				// hard drop
+				if (event.key.code == sf::Keyboard::Down)
+					gameLogic->automaticDrop();
+
+				// firm drop
+				if (event.key.code == sf::Keyboard::Space || event.key.code == sf::Keyboard::Return)
+					gameLogic->firmDrop();
+
+				if (event.key.code == sf::Keyboard::F)
+					gameLogic->rotate(1); // // 1 = 90°, 3 = 270° / -90°
+
+				if (event.key.code == sf::Keyboard::D)
+					gameLogic->rotate(3); // // 1 = 90°, 3 = 270° / -90°	
+			}
+			if (event.type == sf::Event::KeyReleased && !gameLogic->getGameOver() && !pause)
+				if (event.key.code == sf::Keyboard::P)
+					pause = true;
+			/*if (event.type == sf::Event::KeyReleased && !gameLogic->getGameOver() && pause)
+				if (event.key.code == sf::Keyboard::P)
+					pause = false;*/
 		}
+		#pragma endregion
+		
 
-
-		
-		
-		
+		// currently disabled
+		#pragma region framerate
+		//sf::Time frameRateTime = frameRateClock.getElapsedTime();
+		//float framerate = 1.0f / frameRateTime.asSeconds();
+		//printf("frameRate: %f \n", framerate );
+		//frameRateClock.restart().asSeconds();
+		#pragma endregion 
 
 		window.clear();
 
-		
-		// what is to be shown in every "frame":
-
-
-		/* 
-		so every frame we need to draw:
-		landed array
-		my current tetromino
-		background constant stuff
-		*/
-
-		// drawing landed array:
-		for (int row = 0; row < mapHeight; ++row)
+		if (!(gameLogic->getGameOver()))
 		{
-			for (int col = 0; col < mapWidth; ++col)
+
+			#pragma region drawing background
+			window.draw(backgroundSprt);
+			#pragma endregion
+
+			
+
+			#pragma region trigger automaticDrop
+
+			sf::Time elapsed = clock.getElapsedTime();
+
+			if (AIisTurnedOn && !pause)
 			{
-				if (landed[row][col] != 0)
+				if (elapsed.asSeconds() >= 0.1f)
 				{
-					//insert drawing stuff here
+					clock.restart();
+					//gameLogic->automaticDrop();
+
+					// returns true, if tetromino has landed. this also triggers spawning new tetrominos within gamelogic.cpp
+					if ( gameLogic->automaticDrop()) //gameLogic->dropAI()) // <--- might be more performant
+					{
+						// once the tetromino has landed, starting computation for next tetromino
+						ai->makeDecision(false);
+						/*
+						if (ai->isComputationDone())
+							start();
+						*/
+						//stop();
+						
+					
+					}
+							//thread threadAI(secondThreadAI);
 				}
 			}
-		}
-
-		// creating current tetromino "tmp"
-		
-
-		int asdf = tmp->shape.size();
-		int blabla = tmp->shape[0].size();
-
-		// drawing current tetromino:
-		for (int row = 0; row < asdf; ++row)
-		{
-			for (int col = 0; col < blabla; ++col)
+			if (!AIisTurnedOn && !pause)
 			{
-				if (landed[row][col] != 0)
+				if (elapsed.asSeconds() >= 1.f - 0.05 * gameLogic->getLevel())
 				{
-					//total stuff = 
-					//tmp.topleft[0] + row; 
-					//tmp.topleft[1] + col; 
+					clock.restart();
+					gameLogic->automaticDrop();
 				}
+				
 			}
+			else if (pause)
+			{
+				//drawPauseScreen();
+			}
+				
+
+			#pragma endregion
+
+			//threadAI.join();
+
+			
+
+			//ai->makeDecision();
+
+			drawCurrentTetro();
+
+			drawLandedArray();
+
+			drawInterface();
+
 		}
+		else
+			window.draw(gameOverSprt);
 
-		// check for possible collisionsrres
 
-		// check for complete lines
-
-		window.draw(text);
-		//window.draw(shape);
-		
-		
-		
 		window.display();
-
-
 	}
+
+
 
 	return 0;
 }
