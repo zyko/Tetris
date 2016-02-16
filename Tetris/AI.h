@@ -24,6 +24,8 @@ private:
 
 	// variables:
 
+	int debugTetroCounter = 0;
+
 	bool computationDone = false;
 	bool hasLanded = false;
 	bool reachedTheVeryRight = false;

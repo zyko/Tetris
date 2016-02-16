@@ -3,15 +3,6 @@
 using namespace std;
 
 
-/*
-need my own thing in AI now, so needed is:
-copy of landed array
-copy of 1st tetromino
-copy of 2nd tetromino
-
-*/
-
-
 AI::AI(GameLogic* gl)
 {
 	gameLogic = gl;
@@ -40,6 +31,8 @@ void AI::makeDecision(bool initialCall)
 			for (int col = 0; col < 4; ++col)
 				if (tmp->getShape()[row][col] != 0)
 					landedAI[row + tmp->topLeft[0]][col + tmp->topLeft[1]] = tmp->getShape()[row][col];
+
+		delete tmp;
 	}
 	else if (!initialCall)
 	{
@@ -52,12 +45,13 @@ void AI::makeDecision(bool initialCall)
 			for (int col = 0; col < 4; ++col)
 				if (tmp->getShape()[row][col] != 0)
 					landedAI[row + tmp->topLeft[0]][col + tmp->topLeft[1]] = tmp->getShape()[row][col];
-	}
 
+		delete tmp;
+	}
 
 	printf("bottom LineTarget: %d \n", computedResults[0].bottomLineTarget);
 	printf("position: %d \n", computedResults[0].position);
-
+	printf("computed tetrominos in total: %d \n", ++debugTetroCounter),
 
 
 	// this is for multithreading
@@ -109,6 +103,7 @@ float AI::tryNextTet(std::vector< std::vector<int> > droppedCurrentMatrix)
 				nextTet->topLeft[0] = 0;
 				nextTet->topLeft[1] = col-2;
 
+				// todo: should actually be called
 				/*while (!hasLanded)
 				{
 					dropTetromino(nextTet);
@@ -196,8 +191,9 @@ void AI::tryCurrentTet(bool initialCall)
 		currentTet->rotate(1);
 	}
 
-	currentTet->~Tetromino();
-	nextTet->~Tetromino();
+	printf("delete was called");
+	delete currentTet;
+	delete nextTet;
 }
 
 bool AI::tryToSpawn(Tetromino* tet, int position)
@@ -347,7 +343,7 @@ int AI::computeBumpiness()
 }
 
 // getters
-
+// actually for multithreading
 bool AI::isComputationDone()
 {
 	return computationDone;
@@ -357,5 +353,7 @@ bool AI::isComputationDone()
 
 AI::~AI()
 {
-
+	delete currentTet;
+	delete nextTet;
+	delete gameLogic;
 }

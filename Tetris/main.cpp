@@ -39,7 +39,7 @@ const float backgroundTxtOffsetX = 30.f;
 const float backgroundTxtOffsetY = -50.f;
 
 
-sf::RenderWindow window(sf::VideoMode(630, 860), "My window");
+sf::RenderWindow window(sf::VideoMode(630, 860), "Tetris AI clone");
 
 
 void drawNextTetromino()
@@ -86,14 +86,14 @@ void drawCurrentTetro()
 				{
 					
 					yellowBlockSprite.setPosition(sf::Vector2f(gameLogic->getCurrentTetromino()->topLeft[1] * tileOffset + col * tileOffset + backgroundTxtOffsetX,
-						gameLogic->getCurrentTetromino()->topLeft[0] * tileOffset + row * tileOffset + backgroundTxtOffsetY));
+																gameLogic->getCurrentTetromino()->topLeft[0] * tileOffset + row * tileOffset + backgroundTxtOffsetY));
 					window.draw(yellowBlockSprite);
 				}
 				else if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 3)
 				{
 					window.draw(purpleBlockSprite);
 					purpleBlockSprite.setPosition(sf::Vector2f(gameLogic->getCurrentTetromino()->topLeft[1] * tileOffset + col * tileOffset + backgroundTxtOffsetX,
-						gameLogic->getCurrentTetromino()->topLeft[0] * tileOffset + row * tileOffset + backgroundTxtOffsetY));
+																gameLogic->getCurrentTetromino()->topLeft[0] * tileOffset + row * tileOffset + backgroundTxtOffsetY));
 				}
 				else if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 4)
 				{
@@ -230,7 +230,9 @@ int main()
 
 		// BACKGROUND
 		sf::Texture backgroundTxt;
-		backgroundTxt.loadFromFile("background_630x860.png");
+		if (!backgroundTxt.loadFromFile("Assets/background_630x860.png"))
+			printf("error while loading background texture \n");
+
 
 		sf::Sprite backgroundSprt;
 		backgroundSprt.setTexture(backgroundTxt);
@@ -239,45 +241,46 @@ int main()
 		// GAME OVER
 		
 		sf::Texture gameOverTxt;
-		gameOverTxt.loadFromFile("gameOver.png");
+		if (!gameOverTxt.loadFromFile("Assets/gameOver.png"))
+			printf("error while loading gameOver.png \n");
 
 		sf::Sprite gameOverSprt;
 		gameOverSprt.setTexture(gameOverTxt);
 		
 
 		sf::Texture redBlockTexture;
-		if (!redBlockTexture.loadFromFile("RedBlock_40x40.png"))
-			printf("ERROR");
+		if (!redBlockTexture.loadFromFile("Assets/RedBlock_40x40.png"))
+			printf("error while loading redBlockTexture");
 		redBlockSprite.setTexture(redBlockTexture);
 
 		sf::Texture blueBlockTexture;
-		if (!blueBlockTexture.loadFromFile("BlueBlock_40x40.png"))
-			printf("ERROR");
+		if (!blueBlockTexture.loadFromFile("Assets/BlueBlock_40x40.png"))
+			printf("error while loading blueBlockTexture");
 		blueBlockSprite.setTexture(blueBlockTexture);
 
 		sf::Texture greenBlockTexture;
-		if (!greenBlockTexture.loadFromFile("GreenBlock_40x40.png"))
-			printf("ERROR");
+		if (!greenBlockTexture.loadFromFile("Assets/GreenBlock_40x40.png"))
+			printf("error while loading greenBlockTexture");
 		greenBlockSprite.setTexture(greenBlockTexture);
 
 		sf::Texture tealBlockTexture;
-		if (!tealBlockTexture.loadFromFile("TealBlock_40x40.png"))
-			printf("ERROR");
+		if (!tealBlockTexture.loadFromFile("Assets/TealBlock_40x40.png"))
+			printf("error while loading tealBlockTexture");
 		tealBlockSprite.setTexture(tealBlockTexture);
 
 		sf::Texture orangeBlockTexture;
-		if (!orangeBlockTexture.loadFromFile("OrangeBlock_40x40.png"))
-			printf("ERROR");
+		if (!orangeBlockTexture.loadFromFile("Assets/OrangeBlock_40x40.png"))
+			printf("error while loading orangeBlockTexture");
 		orangeBlockSprite.setTexture(orangeBlockTexture);
 
 		sf::Texture yellowBlockTexture;
-		if (!yellowBlockTexture.loadFromFile("YellowBlock_40x40.png"))
-			printf("ERROR");
+		if (!yellowBlockTexture.loadFromFile("Assets/YellowBlock_40x40.png"))
+			printf("error while loading yellowBlockTexture");
 		yellowBlockSprite.setTexture(yellowBlockTexture);
 
 		sf::Texture purpleBlockTexture;
-		if (!purpleBlockTexture.loadFromFile("PurpleBlock_40x40.png"))
-			printf("ERROR");
+		if (!purpleBlockTexture.loadFromFile("Assets/PurpleBlock_40x40.png"))
+			printf("error while loading purpleBlockTexture");
 		purpleBlockSprite.setTexture(purpleBlockTexture);
 
 
@@ -286,20 +289,18 @@ int main()
 	#pragma region texts
 
 		sf::Font font;
-		if (!font.loadFromFile("courbd.ttf")) // should be courier new
+		if (!font.loadFromFile("Fonts/courbd.ttf")) // this is courier new bold
 		{
-			printf("ERROR");
+			printf("error while loading font \n");
 		}
 		levelText.setFont(font);
 		levelText.setCharacterSize(40);
-		//levelText.setString("2");
 		levelText.setColor(sf::Color::White);
 		levelText.setPosition(sf::Vector2f(500.f, 730.f));
 
 
 		scoreText.setFont(font);
 		scoreText.setCharacterSize(40);
-		//scoreText.setString("10000");
 		scoreText.setColor(sf::Color::White);
 		scoreText.setPosition(sf::Vector2f(500.f, 560.f));
 
@@ -310,7 +311,7 @@ int main()
 	#pragma region audio
 
 	sf::Music music;
-	if (!music.openFromFile("tetris_theme.wav"))
+	if (!music.openFromFile("Sound/tetris_theme.wav"))
 		printf("ERROR while loading tetris_theme");
 	//music.play();
 	music.setVolume(20);
@@ -408,7 +409,6 @@ int main()
 						
 					
 					}
-							//thread threadAI(secondThreadAI);
 				}
 			}
 			if (!AIisTurnedOn && !pause)

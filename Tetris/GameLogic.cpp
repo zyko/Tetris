@@ -136,7 +136,7 @@ void GameLogic::spawningNewTetro()
 {
 	if (!gameOver)
 	{
-		currentTet->~Tetromino();
+		delete currentTet;
 		currentTet = nextTet;
 		nextTet = thirdTet;
 
@@ -365,5 +365,7 @@ vector< vector<int> > GameLogic::getLandedMatrix()
 
 GameLogic::~GameLogic()
 {
-
+	delete currentTet;
+	delete nextTet;
+	delete thirdTet;
 }
