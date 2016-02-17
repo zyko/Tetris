@@ -2,13 +2,6 @@
 
 using namespace std;
 
-/* idea:
-struct topLeft
-{
-	int row = 0;
-	int col = 4;
-};
-*/
 
 Tetromino::Tetromino(int typeOfTetromino)
 {

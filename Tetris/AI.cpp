@@ -12,7 +12,6 @@ AI::AI(GameLogic* gl)
 
 void AI::makeDecision(bool initialCall)
 {
-	computationDone = false;
 	tryCurrentTet(initialCall);
 
 
@@ -49,14 +48,14 @@ void AI::makeDecision(bool initialCall)
 		delete tmp;
 	}
 
+	gameLogic->checkForCompletedLines(&landedAI);
+
+
+	// DEBUGGING
+
 	printf("bottom LineTarget: %d \n", computedResults[0].bottomLineTarget);
 	printf("position: %d \n", computedResults[0].position);
-	printf("computed tetrominos in total: %d \n", ++debugTetroCounter),
-
-
-	// this is for multithreading
-	computationDone = true;
-
+	printf("computed tetrominos in total: %d \n", ++debugTetroCounter);
 	/* turn this off for a second
 	printf("---- BEST COMPUTATION VALUE ---- \n");
 	printf("maxVal: %f \n", computedResults[0].result);
@@ -65,15 +64,80 @@ void AI::makeDecision(bool initialCall)
 	*/
 }
 
-
-
-void AI::moveTetromino()
+void AI::tryCurrentTet(bool initialCall)
 {
-	// set real current Tetromino to desired position
-	gameLogic->bottomLineTarget = computedResults[0].bottomLineTarget;
-	gameLogic->getCurrentTetromino()->rotate(computedResults[0].rotation);
-	gameLogic->getCurrentTetromino()->topLeft[1] = computedResults[0].position;
-	
+	// creating a copy of gameLogic's real Tetrominos
+	if (initialCall) 
+	{
+		currentTet = new Tetromino(gameLogic->getCurrentTetromino()->getType());
+		nextTet = new Tetromino(gameLogic->getNextTetromino()->getType());
+
+	}
+	else if (!initialCall)
+	{
+		currentTet = new Tetromino(gameLogic->getNextTetromino()->getType());
+		nextTet = new Tetromino(gameLogic->getThirdTetromino()->getType());
+	}
+
+
+	int counter = 0; // debug
+	computedResults.resize(1);
+
+	float maxCompVal = -std::numeric_limits<float>::max();
+
+	int maxRotations = 4;
+	if (currentTet->getType() == 0 || currentTet->getType() == 4 || currentTet->getType() == 5) // Tetros 'I', 'S' and 'Z' have only 2 rotations
+		maxRotations = 2;
+	if (currentTet->getType() == 1)	// Tetro 'O' has only 1 rotation
+		maxRotations = 1;
+
+	for (int rotations = 0; rotations < maxRotations; ++rotations)
+	{
+		for (int col = 0; col < gameLogic->getMapWidth(); ++col)
+		{
+			if (tryToSpawn(currentTet, col - 2)) // tries to respawn on different y / col locations. from very left to very right
+			{
+				cpt = landedAI;
+
+
+				currentTet->topLeft[0] = 0;
+				currentTet->topLeft[1] = col - 2;
+
+				while (!hasLanded)
+				{
+					dropTetromino(currentTet);
+				}
+
+
+				hasLanded = false;
+
+				// debugging:
+				/* turn this off for a second
+
+				printf("--------------------\n");
+				printf("computation no: %d \n", counter++);
+				printf("rotation: %d \n", rotations);
+				printf("currentTet->topLeft[1]: %d \n", currentTet->topLeft[1]);
+				*/
+
+				// try next Tetromino as well with current landed matrix
+				// in this landed matrix, the current Tetromino we're trying should be landed
+				//std::vector< std::vector<int> > droppedCurrentMatrix = cpt;
+				float cmp = computation();// +tryNextTet(droppedCurrentMatrix);
+
+
+				if (cmp > maxCompVal)
+				{
+					maxCompVal = cmp;
+					computedResults[0] = { cmp, currentTet->topLeft[1], rotations, currentTet->topLeft[0] };
+				}
+			}
+		}
+		currentTet->rotate(1);
+	}
+
+	delete currentTet;
+	delete nextTet;
 }
 
 // returns highest computation value for the 2nd tetromino
@@ -101,12 +165,12 @@ float AI::tryNextTet(std::vector< std::vector<int> > droppedCurrentMatrix)
 				cpt = droppedCurrentMatrix;
 
 				nextTet->topLeft[0] = 0;
-				nextTet->topLeft[1] = col-2;
+				nextTet->topLeft[1] = col - 2;
 
 				// todo: should actually be called
 				/*while (!hasLanded)
 				{
-					dropTetromino(nextTet);
+				dropTetromino(nextTet);
 				}*/
 
 				float cmp = computation();
@@ -122,79 +186,19 @@ float AI::tryNextTet(std::vector< std::vector<int> > droppedCurrentMatrix)
 	return maxCompVal;
 }
 
-void AI::tryCurrentTet(bool initialCall)
+
+void AI::moveTetromino()
 {
-	if (initialCall)
-	{
-		currentTet = new Tetromino(gameLogic->getCurrentTetromino()->getType());
-		nextTet = new Tetromino(gameLogic->getNextTetromino()->getType());
-	}
-	else if (!initialCall)
-	{
-		currentTet = new Tetromino(gameLogic->getNextTetromino()->getType());
-		nextTet = new Tetromino(gameLogic->getThirdTetromino()->getType());
-	}
+	// set real current Tetromino to desired position
+	gameLogic->bottomLineTarget = computedResults[0].bottomLineTarget;
+	gameLogic->getCurrentTetromino()->rotate(computedResults[0].rotation);
+	gameLogic->getCurrentTetromino()->topLeft[1] = computedResults[0].position;
 	
-
-	int counter = 0; // debug
-	computedResults.resize(1);
-
-	float maxCompVal = -std::numeric_limits<float>::max();
-
-	int maxRotations = 4;
-	if (currentTet->getType() == 0 || currentTet->getType() == 4 || currentTet->getType() == 5) // Tetros 'I', 'S' and 'Z' have only 2 rotations
-		maxRotations = 2;
-	if (currentTet->getType() == 1)	// Tetro 'O' has only 1 rotation
-		maxRotations = 1;
-
-	for (int rotations = 0; rotations < maxRotations; ++rotations)
-	{
-		for (int col = 0; col < gameLogic->getMapWidth(); ++col)
-		{
-			if (tryToSpawn(currentTet, col - 2)) // tries to respawn on different y / col locations. from very left to very right
-			{
-				cpt = landedAI;
-
-
-				currentTet->topLeft[0] = 0;
-				currentTet->topLeft[1] = col-2;
-
-				while (!hasLanded)
-				{
-					dropTetromino(currentTet);
-				}
-					
-
-				hasLanded = false;
-
-				// debugging:
-				/* turn this off for a second
-				
-				printf("--------------------\n");
-				printf("computation no: %d \n", counter++);
-				printf("rotation: %d \n", rotations);
-				printf("currentTet->topLeft[1]: %d \n", currentTet->topLeft[1]);
-				*/
-
-				// try next Tetromino as well with current landed matrix
-				std::vector< std::vector<int> > droppedCurrentMatrix = cpt;
-				float cmp = computation();// +tryNextTet(droppedCurrentMatrix);
-
-
-				if (cmp > maxCompVal)
-				{
-					maxCompVal = cmp;
-					computedResults[0] = { cmp, currentTet->topLeft[1], rotations, currentTet->topLeft[0] };
-				}	
-			}
-		}
-		currentTet->rotate(1);
-	}
-
-	printf("delete was called");
-	delete currentTet;
-	delete nextTet;
 }
+
+
+// 1st step:
+// this is used for trying to spawn the tetromino on x-axis
 
 bool AI::tryToSpawn(Tetromino* tet, int position)
 {
@@ -210,7 +214,8 @@ bool AI::tryToSpawn(Tetromino* tet, int position)
 	return ableToSpawn;
 }
 
-// moving Tetrominos
+// 2nd step:
+// this is used for the tetromino to be dropped on y-axis
 
 void AI::dropTetromino(Tetromino* tet)
 {
@@ -239,14 +244,15 @@ void AI::dropTetromino(Tetromino* tet)
 		tet->topLeft[0]++;
 }
 
+
 // computation
 
 float AI::computation()
 {
-	float heightConstant =		-0.51;
-	float linesConstant =		 0.76;
-	float holesConstant =		-0.35;
-	float bumpinessConstant =	-0.18;
+	float heightConstant =		-0.51f;
+	float linesConstant =		 0.76f;
+	float holesConstant =		-0.35f;
+	float bumpinessConstant =	-0.18f;
 	float computation = 0;
 
 	computation += (heightConstant *	computeAggregateHeight());
@@ -342,12 +348,11 @@ int AI::computeBumpiness()
 
 }
 
+//-----------------
+
+
 // getters
 // actually for multithreading
-bool AI::isComputationDone()
-{
-	return computationDone;
-}
 
 // destructor
 

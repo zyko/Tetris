@@ -92,7 +92,9 @@ bool GameLogic::dropAI()
 	return false;
 }
 
+
 // this is for normal single player
+
 bool GameLogic::automaticDrop()
 {
 	// checking for collisions
@@ -123,38 +125,6 @@ bool GameLogic::automaticDrop()
 
 	return false;
 
-}
-
-void GameLogic::tetroHasLanded()
-{
-	firmDropped = true;
-	checkForCompletedLines();
-	spawningNewTetro();
-}
-
-void GameLogic::spawningNewTetro()
-{
-	if (!gameOver)
-	{
-		delete currentTet;
-		currentTet = nextTet;
-		nextTet = thirdTet;
-
-		
-		ai->moveTetromino();
-
-		/*  spawning after the tetris "rule":
-		*	all 7 tetrominos must be spawned, before another same can be spawned
-		*/
-		if (randomBag.size() <= 0)
-			randomBag = { 0, 1, 2, 3, 4, 5, 6 };
-
-		int rndInt = rand() % randomBag.size();
-
-		thirdTet = new Tetromino(randomBag[rndInt]);
-
-		randomBag.erase(randomBag.begin() + rndInt);
-	}
 }
 
 void GameLogic::moveRight()
@@ -189,14 +159,57 @@ void GameLogic::moveLeft()
 		for (int col = 0; col < 4; ++col)
 			if (currentTet->getShape()[row][col] != 0)
 			{
-				if (col + potentialTopLeft[1] < 0)
-					blocked = true;
-				else if (landed[row + potentialTopLeft[0]][col + potentialTopLeft[1]] != 0)
-					blocked = true;
+		if (col + potentialTopLeft[1] < 0)
+			blocked = true;
+		else if (landed[row + potentialTopLeft[0]][col + potentialTopLeft[1]] != 0)
+			blocked = true;
 			}
 
 	if (!blocked)
 		currentTet->topLeft[1]--;
+}
+
+void GameLogic::firmDrop()
+{
+	while (!firmDropped)
+		automaticDrop();
+
+	firmDropped = false;
+}
+
+// ---------------------------------
+
+
+void GameLogic::tetroHasLanded()
+{
+	firmDropped = true;
+	checkForCompletedLines(&landed);
+	spawningNewTetro();
+}
+
+void GameLogic::spawningNewTetro()
+{
+	if (!gameOver)
+	{
+		delete currentTet;
+		currentTet = nextTet;
+		nextTet = thirdTet;
+
+		
+		ai->moveTetromino();
+
+		/*  spawning after the tetris "rule":
+		*	all 7 tetrominos must be spawned, before another same can be spawned
+		*/
+		if (randomBag.size() <= 0)
+			randomBag = { 0, 1, 2, 3, 4, 5, 6 };
+
+		int rndInt = rand() % randomBag.size();
+
+		thirdTet = new Tetromino(randomBag[rndInt]);
+
+		randomBag.erase(randomBag.begin() + rndInt);
+	}
 }
 
 void GameLogic::rotate(int degreeIndicator)
@@ -215,7 +228,7 @@ void GameLogic::rotate(int degreeIndicator)
 	for (int row = 0; row < 4; ++row)
 		for (int col = 0; col < 4; ++col)
 			if (currentTet->getShape()[row][col] != 0)
-			{	// prevent from moving "out of bounds" / playing area
+			{	// prevent from moving "out of bounds" / playing area (only for single player necessary)
 		if (col + currentTet->topLeft[1] < 0)			// left side
 		{
 			currentTet->rotate(rotateBack);		// rotating again to 360° 
@@ -235,12 +248,35 @@ void GameLogic::rotate(int degreeIndicator)
 			}
 }
 
-void GameLogic::clearLine(int index)
+void GameLogic::checkForCompletedLines(std::vector< std::vector<int> > *landedMatrix)
+{
+	int completedLinesCounter = 0;
+
+	for (int row = 0; row < mapHeight; ++row)
+	{
+		bool lineIsComplete = true;
+		for (int col = 0; col < mapWidth; ++col)
+			if ((*landedMatrix)[row][col] == 0)
+				lineIsComplete = false;
+		if (lineIsComplete)
+		{
+			clearLine(row, landedMatrix);
+			completedLinesCounter++;
+		}
+
+	}
+	if (completedLinesCounter != 0)
+		calculatingScore(completedLinesCounter);
+
+	checkForGameOver();
+}
+
+void GameLogic::clearLine(int index, std::vector< std::vector<int> > *landedMatrix)
 {
 	int toClear = index;
 	for (toClear; toClear >= invisibleTopLines; --toClear)
 		for (int col = 0; col < mapWidth; ++col)
-			landed[toClear][col] = landed[toClear - 1][col];
+			(*landedMatrix)[toClear][col] = (*landedMatrix)[toClear - 1][col];
 }
 
 void GameLogic::calculatingScore(int lines)
@@ -264,6 +300,13 @@ void GameLogic::calculatingScore(int lines)
 
 }
 
+void GameLogic::checkForGameOver()
+{
+	for (int col = 0; col < mapWidth; ++col)
+		if (landed[1][col] != 0)
+			setGameOver();
+}
+
 void GameLogic::setGameOver()
 {
 	gameOver = true;
@@ -273,43 +316,12 @@ void GameLogic::setGameOver()
 	thirdTet->~Tetromino();
 }
 
-void GameLogic::checkForGameOver()
+void GameLogic::resetGame()
 {
-	for (int col = 0; col < mapWidth; ++col)
-		if (landed[1][col] != 0)
-			setGameOver();
+
 }
 
-void GameLogic::checkForCompletedLines()
-{
-	int completedLinesCounter = 0;
-
-	for (int row = 0; row < mapHeight; ++row)
-	{
-		bool lineIsComplete = true;
-		for (int col = 0; col < mapWidth; ++col)
-			if (landed[row][col] == 0)
-				lineIsComplete = false;
-		if (lineIsComplete)
-		{
-			clearLine(row);
-			completedLinesCounter++;
-		}
-
-	}
-	if (completedLinesCounter != 0)
-		calculatingScore(completedLinesCounter);
-
-	checkForGameOver();
-}
-
-void GameLogic::firmDrop()
-{
-	while (!firmDropped)
-		automaticDrop();
-
-	firmDropped = false;
-}
+// SETTER
 
 void GameLogic::setAI(AI* ai)
 {

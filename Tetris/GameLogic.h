@@ -46,12 +46,12 @@ private:
 	// functions:	
 
 	void spawningNewTetro();
+	void resetGame();
 	
-	void clearLine(int index);
 	void calculatingScore(int lines);
 	void setGameOver();
 	void checkForGameOver();
-	void checkForCompletedLines();
+	
 	void tetroHasLanded();
 	
 
@@ -62,6 +62,11 @@ public:
 
 	// functions: 
 	
+
+	void checkForCompletedLines(std::vector< std::vector<int> > *landedMatrix);
+	void clearLine(int index, std::vector< std::vector<int> > *landedMatrix);
+
+
 	void setAI(AI* ai);
 
 	void firmDrop();

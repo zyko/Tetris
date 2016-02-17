@@ -6,6 +6,7 @@
 #include "GameLogic.h"
 #include "Tetromino.h"
 #include "AI.h"
+#include "View.h"
 
 #include <memory>
 #include <vector>
@@ -31,6 +32,7 @@ sf::Text scoreText;
 
 GameLogic* gameLogic;
 AI* ai;
+View* view;
 
 unique_ptr<thread> threadAI;
 
@@ -39,7 +41,7 @@ const float backgroundTxtOffsetX = 30.f;
 const float backgroundTxtOffsetY = -50.f;
 
 
-sf::RenderWindow window(sf::VideoMode(630, 860), "Tetris AI clone");
+sf::RenderWindow window(sf::VideoMode(1260, 860), "Tetris AI clone");
 
 
 void drawNextTetromino()
@@ -75,48 +77,48 @@ void drawCurrentTetro()
 	if (!gameLogic->getGameOver())
 		for (int row = 0; row < 4; ++row)
 			for (int col = 0; col < 4; ++col)
-				if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 1)
+				if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 6)
 				{
 					tealBlockSprite.setPosition(sf::Vector2f(gameLogic->getCurrentTetromino()->topLeft[1] * tileOffset + col * tileOffset + backgroundTxtOffsetX,
 															gameLogic->getCurrentTetromino()->topLeft[0] * tileOffset + row * tileOffset + backgroundTxtOffsetY));
 					window.draw(tealBlockSprite);
 					
 				}
-				else if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 2)
+				else if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 7)
 				{
 					
 					yellowBlockSprite.setPosition(sf::Vector2f(gameLogic->getCurrentTetromino()->topLeft[1] * tileOffset + col * tileOffset + backgroundTxtOffsetX,
 																gameLogic->getCurrentTetromino()->topLeft[0] * tileOffset + row * tileOffset + backgroundTxtOffsetY));
 					window.draw(yellowBlockSprite);
 				}
-				else if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 3)
+				else if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 2)
 				{
 					window.draw(purpleBlockSprite);
 					purpleBlockSprite.setPosition(sf::Vector2f(gameLogic->getCurrentTetromino()->topLeft[1] * tileOffset + col * tileOffset + backgroundTxtOffsetX,
 																gameLogic->getCurrentTetromino()->topLeft[0] * tileOffset + row * tileOffset + backgroundTxtOffsetY));
 				}
-				else if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 4)
+				else if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 5)
 				{
 					greenBlockSprite.setPosition(sf::Vector2f(gameLogic->getCurrentTetromino()->topLeft[1] * tileOffset + col * tileOffset + backgroundTxtOffsetX,
 						gameLogic->getCurrentTetromino()->topLeft[0] * tileOffset + row * tileOffset + backgroundTxtOffsetY));
 					window.draw(greenBlockSprite);
 
 				}
-				else if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 5)
+				else if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 4)
 				{
 					redBlockSprite.setPosition(sf::Vector2f(gameLogic->getCurrentTetromino()->topLeft[1] * tileOffset + col * tileOffset + backgroundTxtOffsetX,
 						gameLogic->getCurrentTetromino()->topLeft[0] * tileOffset + row * tileOffset + backgroundTxtOffsetY));
 					window.draw(redBlockSprite);
 
 				}
-				else if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 6)
+				else if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 3)
 				{
 					blueBlockSprite.setPosition(sf::Vector2f(gameLogic->getCurrentTetromino()->topLeft[1] * tileOffset + col * tileOffset + backgroundTxtOffsetX,
 						gameLogic->getCurrentTetromino()->topLeft[0] * tileOffset + row * tileOffset + backgroundTxtOffsetY));
 					window.draw(blueBlockSprite);
 
 				}
-				else if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 7)
+				else if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 1)
 				{
 					orangeBlockSprite.setPosition(sf::Vector2f(gameLogic->getCurrentTetromino()->topLeft[1] * tileOffset + col * tileOffset + backgroundTxtOffsetX,
 																gameLogic->getCurrentTetromino()->topLeft[0] * tileOffset + row * tileOffset + backgroundTxtOffsetY));
@@ -125,49 +127,59 @@ void drawCurrentTetro()
 				}
 }
 
+void drawAILandedArray()
+{
+	for (int row = 0; row < gameLogic->getMapHeight(); ++row)
+		for (int col = 0; col < gameLogic->getMapWidth(); ++col)
+			if (ai->landedAI[row][col] != 0)
+			{
+				tealBlockSprite.setPosition(sf::Vector2f(col * tileOffset + backgroundTxtOffsetX + 600, row * tileOffset + backgroundTxtOffsetY));
+				window.draw(tealBlockSprite);
+			}
+}
+
 // draws landed array with data from gamelogic
 void drawLandedArray()
 {
-	//printf("drawing landed array is called \n");
 	for (int row = 0; row < gameLogic->getMapHeight(); ++row)
 		for (int col = 0; col < gameLogic->getMapWidth(); ++col)
-			if (gameLogic->getLandedMatrix()[row][col] == 1)
+			if (gameLogic->getLandedMatrix()[row][col] == 6)
 			{
 				tealBlockSprite.setPosition(sf::Vector2f(col * tileOffset + backgroundTxtOffsetX, row * tileOffset + backgroundTxtOffsetY));
 				window.draw(tealBlockSprite);
 
 			}
-			else if (gameLogic->getLandedMatrix()[row][col] == 2)
+			else if (gameLogic->getLandedMatrix()[row][col] == 7)
 			{
 				yellowBlockSprite.setPosition(sf::Vector2f(col * tileOffset + backgroundTxtOffsetX, row * tileOffset + backgroundTxtOffsetY));
 				window.draw(yellowBlockSprite);
 
 			}
-			else if (gameLogic->getLandedMatrix()[row][col] == 3)
+			else if (gameLogic->getLandedMatrix()[row][col] == 2)
 			{
 				purpleBlockSprite.setPosition(sf::Vector2f(col * tileOffset + backgroundTxtOffsetX, row * tileOffset + backgroundTxtOffsetY));
 				window.draw(purpleBlockSprite);
 
 			}
-			else if (gameLogic->getLandedMatrix()[row][col] == 4)
+			else if (gameLogic->getLandedMatrix()[row][col] == 5)
 			{
 				greenBlockSprite.setPosition(sf::Vector2f(col * tileOffset + backgroundTxtOffsetX, row * tileOffset + backgroundTxtOffsetY));
 				window.draw(greenBlockSprite);
 
 			}
-			else if (gameLogic->getLandedMatrix()[row][col] == 5)
+			else if (gameLogic->getLandedMatrix()[row][col] == 4)
 			{
 				redBlockSprite.setPosition(sf::Vector2f(col * tileOffset + backgroundTxtOffsetX, row * tileOffset + backgroundTxtOffsetY));
 				window.draw(redBlockSprite);
 
 			}
-			else if (gameLogic->getLandedMatrix()[row][col] == 6)
+			else if (gameLogic->getLandedMatrix()[row][col] == 3)
 			{
 				blueBlockSprite.setPosition(sf::Vector2f(col * tileOffset + backgroundTxtOffsetX, row * tileOffset + backgroundTxtOffsetY));
 				window.draw(blueBlockSprite);
 
 			}
-			else if (gameLogic->getLandedMatrix()[row][col] == 7)
+			else if (gameLogic->getLandedMatrix()[row][col] == 1)
 			{
 				orangeBlockSprite.setPosition(sf::Vector2f(col * tileOffset + backgroundTxtOffsetX, row * tileOffset + backgroundTxtOffsetY));
 				window.draw(orangeBlockSprite);
@@ -212,6 +224,9 @@ int main()
 	ai = new AI(gameLogic);
 	gameLogic->setAI(ai);
 
+	view = new View(&window);
+	view->setGameLogic(gameLogic);
+
 	ai->makeDecision(true);
 	ai->moveTetromino();
 	ai->makeDecision(false);
@@ -243,7 +258,6 @@ int main()
 		sf::Texture gameOverTxt;
 		if (!gameOverTxt.loadFromFile("Assets/gameOver.png"))
 			printf("error while loading gameOver.png \n");
-
 		sf::Sprite gameOverSprt;
 		gameOverSprt.setTexture(gameOverTxt);
 		
@@ -400,14 +414,7 @@ int main()
 					if ( gameLogic->automaticDrop()) //gameLogic->dropAI()) // <--- might be more performant
 					{
 						// once the tetromino has landed, starting computation for next tetromino
-						ai->makeDecision(false);
-						/*
-						if (ai->isComputationDone())
-							start();
-						*/
-						//stop();
-						
-					
+						ai->makeDecision(false);		
 					}
 				}
 			}
@@ -431,9 +438,13 @@ int main()
 
 			drawCurrentTetro();
 
+			view->drawNextTetro();
+
 			drawLandedArray();
 
 			drawInterface();
+
+			drawAILandedArray();
 
 		}
 		else
@@ -443,7 +454,9 @@ int main()
 		window.display();
 	}
 
-
+	/*delete ai;
+	delete gameLogic;
+	delete view;*/
 
 	return 0;
 }

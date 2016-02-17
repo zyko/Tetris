@@ -33,8 +33,7 @@ private:
 	// array used for computations
 	std::vector< std::vector<int> > cpt;
 
-	// AI's very own landed array. always adding one tetromino to it before gamelogic.cpp does
-	std::vector< std::vector<int> > landedAI;
+	
 
 
 	Tetromino* currentTet;
@@ -66,7 +65,9 @@ private:
 
 public:
 
-	bool isComputationDone();
+	// AI's very own landed array. always adding one tetromino to it before gamelogic.cpp does
+	std::vector< std::vector<int> > landedAI;
+
 	void moveTetromino();
 	void makeDecision(bool initialCall);
 	AI(GameLogic* gl);

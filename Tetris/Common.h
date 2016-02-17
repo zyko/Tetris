@@ -4,5 +4,6 @@
 class GameLogic;
 class Tetromino;
 class AI;
+class View;
 
 #endif
