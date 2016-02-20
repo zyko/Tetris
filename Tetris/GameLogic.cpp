@@ -23,60 +23,64 @@ GameLogic::GameLogic()
 
 	// debug stuff
 
-	
-	for (int i = 19; i < mapHeight; ++i)
-		landed[i][0] = 1;
-	for (int i = 17; i < mapHeight; ++i)
-		landed[i][1] = 1;
-	for (int i = 17; i < mapHeight; ++i)
-		landed[i][2] = 1;
-	for (int i = 17; i < mapHeight; ++i)
-		landed[i][3] = 1;
-	for (int i = 16; i < mapHeight; ++i)
-		landed[i][4] = 1;
-	for (int i = 16; i < mapHeight; ++i)
-		landed[i][5] = 1;
-	for (int i = 17; i < mapHeight; ++i)
-		landed[i][6] = 1;
-	for (int i = 18; i < mapHeight; ++i)
-		landed[i][7] = 1;
-	for (int i = 18; i < mapHeight; ++i)
-		landed[i][8] = 1;
-	
-	landed[20][3] = 0;
-	landed[18][3] = 0;
-
-	
-	/*
-	for (int i = 17; i < mapHeight; ++i)
-		landed[i][9] = 1;
-
-	/*
-	landed[19][0] = 1;
-	landed[17][1] = 1;
-	landed[17][2] = 1;
-	landed[17][3] = 1;
-	landed[16][4] = 1;
-	landed[16][5] = 1;
-	landed[17][6] = 1;
-	landed[18][7] = 1;
-	landed[18][8] = 1;
-	landed[17][9] = 1;
-	*/
+	//
+	//for (int i = 19; i < mapHeight; ++i)
+	//	landed[i][0] = 1;
+	//for (int i = 17; i < mapHeight; ++i)
+	//	landed[i][1] = 1;
+	//for (int i = 17; i < mapHeight; ++i)
+	//	landed[i][2] = 1;
+	//for (int i = 17; i < mapHeight; ++i)
+	//	landed[i][3] = 1;
+	//for (int i = 16; i < mapHeight; ++i)
+	//	landed[i][4] = 1;
+	//for (int i = 16; i < mapHeight; ++i)
+	//	landed[i][5] = 1;
+	//for (int i = 17; i < mapHeight; ++i)
+	//	landed[i][6] = 1;
+	//for (int i = 18; i < mapHeight; ++i)
+	//	landed[i][7] = 1;
+	//for (int i = 18; i < mapHeight; ++i)
+	//	landed[i][8] = 1;
+	//
+	//landed[20][3] = 0;
+	//landed[18][3] = 0;
 }
 
+// this is called at the very beginning of the game and if game's restarting
 void GameLogic::initializeTetros()
 {
-	currentTet = new Tetromino(2);
-	nextTet = new Tetromino(2);
-	thirdTet = new Tetromino(2);
+	/* initialize random seed: */
+	srand(time(NULL));
+
+	// due to the possibility to reset the game at any time, randomBag can be empty any time
+	if (randomBag.size() <= 0)
+		randomBag = { 0, 1, 2, 3, 4, 5, 6 };
+	int rndInt = rand() % randomBag.size();
+	currentTet = new Tetromino(randomBag[rndInt]);
+	randomBag.erase(randomBag.begin() + rndInt);
+
+	// due to the possibility to reset the game at any time, randomBag can be empty any time
+	if (randomBag.size() <= 0)
+		randomBag = { 0, 1, 2, 3, 4, 5, 6 };
+	rndInt = rand() % randomBag.size();
+	nextTet = new Tetromino(randomBag[rndInt]);
+	randomBag.erase(randomBag.begin() + rndInt);
+
+	// due to the possibility to reset the game at any time, randomBag can be empty any time
+	if (randomBag.size() <= 0)
+		randomBag = { 0, 1, 2, 3, 4, 5, 6 };
+	rndInt = rand() % randomBag.size();
+	thirdTet = new Tetromino(randomBag[rndInt]);
+	randomBag.erase(randomBag.begin() + rndInt);
+
 }
 
 // drop method for AI // obsolet?
 bool GameLogic::dropAI()
 {
-	if (currentTet->topLeft[0] == bottomLineTarget)
-	{
+
+	currentTet->topLeft[0] = bottomLineTarget;
 		for (int row = 0; row < 4; ++row)
 			for (int col = 0; col < 4; ++col)
 				if (currentTet->getShape()[row][col] != 0)
@@ -85,11 +89,6 @@ bool GameLogic::dropAI()
 
 		tetroHasLanded();
 		return true;
-	}
-	else
-		currentTet->topLeft[0]++;
-
-	return false;
 }
 
 
@@ -184,13 +183,25 @@ void GameLogic::tetroHasLanded()
 {
 	firmDropped = true;
 	checkForCompletedLines(&landed);
-	spawningNewTetro();
+
+	if (geneticAlgorithmComputing)
+		if (ai->checkForReset(amountOfTetrominosDropped))
+			setGameOver();
+		else
+			spawningNewTetro();
+
+	/* this is important to not spawn a new tetro when generic algorithm triggers a reset */
+
+	if (singlePlayer || finishedAIplays)
+		spawningNewTetro();	
 }
 
 void GameLogic::spawningNewTetro()
 {
 	if (!gameOver)
 	{
+		amountOfTetrominosDropped++;
+
 		delete currentTet;
 		currentTet = nextTet;
 		nextTet = thirdTet;
@@ -198,9 +209,14 @@ void GameLogic::spawningNewTetro()
 		
 		ai->moveTetromino();
 
+
+		/* initialize random seed: */
+		srand(time(NULL));
+
 		/*  spawning after the tetris "rule":
 		*	all 7 tetrominos must be spawned, before another same can be spawned
 		*/
+		
 		if (randomBag.size() <= 0)
 			randomBag = { 0, 1, 2, 3, 4, 5, 6 };
 
@@ -310,16 +326,44 @@ void GameLogic::checkForGameOver()
 void GameLogic::setGameOver()
 {
 	gameOver = true;
-	printf("GAME OVER!");
+	printf("GAME OVER! \n");
 	currentTet->~Tetromino();
 	nextTet->~Tetromino();
 	thirdTet->~Tetromino();
+
+	if (!singlePlayer)
+		resetGame();
 }
+
+
+// this is for Genetic Algorithm:
+
 
 void GameLogic::resetGame()
 {
+	totalGamesPlayed++;
 
+	// resetting landed array
+	for (int row = 0; row < mapHeight; ++row)
+		for (int col = 0; col < mapWidth; ++col)
+			landed[row][col] = 0;
+
+	initializeTetros();
+	
+	ai->gameHasFinished(&totalLinesCleared, &totalGamesPlayed);
+
+
+
+
+	gameOver = false;
+	amountOfTetrominosDropped = 0;
+	level = 0;
+	score = 0;
+	
 }
+
+// --------------------
+
 
 // SETTER
 
@@ -329,6 +373,31 @@ void GameLogic::setAI(AI* ai)
 }
 
 // GETTERS
+
+bool GameLogic::getFinishedAIPlays()
+{
+	return finishedAIplays;
+}
+
+bool GameLogic::getGeneticAlgorithmComputing()
+{
+	return geneticAlgorithmComputing;
+}
+
+int GameLogic::getTotalGamesPlayed()
+{
+	return totalGamesPlayed;
+}
+
+int GameLogic::getAmountOfTetrominosDropped()
+{
+	return amountOfTetrominosDropped;
+}
+
+bool GameLogic::getSinglePlayer()
+{
+	return singlePlayer;
+}
 
 bool GameLogic::getGameOver()
 {

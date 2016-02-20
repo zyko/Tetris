@@ -8,9 +8,15 @@ View::View(sf::RenderWindow* window)
 	sf::Texture gameOverTxt;
 	if (!gameOverTxt.loadFromFile("Assets/gameOver.png"))
 		printf("error while loading gameOver.png \n");
-	//sf::Sprite gameOverSprt;
 	gameOverSprt.setTexture(gameOverTxt);
 
+
+	if (!font.loadFromFile("Fonts/courbd.ttf")) // this is courier new bold
+		printf("error while loading font \n");
+	parameterAItxt.setFont(font);
+	parameterAItxt.setCharacterSize(20);
+	parameterAItxt.setColor(sf::Color::Green);
+	parameterAItxt.setPosition(sf::Vector2f(640.f, 100.f));
 
 	#pragma region Tetromino sprites
 
@@ -51,7 +57,7 @@ View::View(sf::RenderWindow* window)
 
 	#pragma endregion
 
-#pragma region Tetromino preview sprites
+	#pragma region Tetromino preview sprites
 
 	if (!JTetrominoPreviewTexture.loadFromFile("Assets/JTetrominoPreview.png"))
 		printf("error while loading JTetrominoPreviewTexture");
@@ -114,9 +120,58 @@ void View::drawNextTetro()
 		window->draw(TTetrominoPreviewSprite);
 }
 
+void View::drawInterface()
+{
+
+	drawAIinterface();
+	
+}
+
+void View::drawAIinterface()
+{
+	std::vector<float> parameters = ai->getParameters();
+
+	float aggregateHeightParameter = parameters[0];
+	float completeLinesParameter = parameters[1];
+	float holesParameter = parameters[2];
+	float bumpinessParameter = parameters[3];
+
+	
+	std::string game =			"\n current game:                 " + std::to_string(gameLogic->getTotalGamesPlayed())
+							+ " / " + std::to_string(ai->getTotalGamesToBePlayedForOneIndividual());
+
+	std::string individual =	"\n current individual:           " + std::to_string(ai->getCurrentIndividualIndex())
+							+ " / " + std::to_string(ai->getMaxPopulation());
+
+	std::string tetros =		"\n amount of tetrominos dropped: " + std::to_string(gameLogic->getAmountOfTetrominosDropped())
+												+ " / " + std::to_string(ai->getTotalTetrominosToBeDroppedForOneIndividual());
+
+
+	std::string a = "\n\n currently tried parameters: \n";
+	std::string b = "\n aggregate height: ";
+	std::string c = std::to_string(aggregateHeightParameter);
+	std::string d = "\n complete lines:    ";
+	std::string e = std::to_string(completeLinesParameter);
+	std::string f = "\n holes:            ";
+	std::string g = std::to_string(holesParameter);
+	std::string h = "\n bumpiness:        ";
+	std::string i = std::to_string(bumpinessParameter);
+
+	parameterAItxt.setString(individual + game + tetros + a + b + c + d + e + f + g + h + i);
+
+
+	window->draw(parameterAItxt);
+
+}
+
 void View::setGameLogic(GameLogic* gl)
 {
 	gameLogic = gl;
+}
+
+void View::setAI(AI* ai)
+{
+	this->ai = ai;
 }
 
 View::~View()

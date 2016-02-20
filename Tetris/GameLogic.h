@@ -9,6 +9,7 @@
 
 #include <vector>
 #include <stdio.h>
+#include <time.h>
 
 
 class GameLogic
@@ -27,16 +28,14 @@ private:
 	Tetromino* currentTet;
 	Tetromino* nextTet;
 	Tetromino* thirdTet;
-
 	AI* ai;
 
 	int score = 0;
 	int level = 0;
 	int totalLinesCleared = 0;
-	
-	// for AI only:
+	int amountOfTetrominosDropped = 0;
 
-	
+	// for AI only:
 
 	bool gameOver = false;
 	bool firmDropped = false;
@@ -47,21 +46,36 @@ private:
 
 	void spawningNewTetro();
 	void resetGame();
-	
+
 	void calculatingScore(int lines);
 	void setGameOver();
 	void checkForGameOver();
-	
+
 	void tetroHasLanded();
-	
+
 
 public:
 
+	/* GENETIC ALGORITHM */
+
+	/* define the art of program we're starting */
+	/* only one can be true at the same time */
+
+	const bool finishedAIplays = false;
+	const bool geneticAlgorithmComputing = true;
+	const bool singlePlayer = false;
+
+	int totalGamesPlayed = 0;
+
+
+	/* ----------------- */
+
+	void checkForAIreset();
 
 	int bottomLineTarget = 0;
 
 	// functions: 
-	
+
 
 	void checkForCompletedLines(std::vector< std::vector<int> > *landedMatrix);
 	void clearLine(int index, std::vector< std::vector<int> > *landedMatrix);
@@ -75,10 +89,19 @@ public:
 	void moveLeft();
 	bool getGameOver();
 
+	/* GETTERS */
+
+	int getTotalGamesPlayed();
+	int getAmountOfTetrominosDropped();
+
 	int getMapHeight();
 	int getMapWidth();
 	int getScore();
 	int getLevel();
+
+	bool getFinishedAIPlays();
+	bool getGeneticAlgorithmComputing();
+	bool getSinglePlayer();
 	
 
 	bool dropAI();

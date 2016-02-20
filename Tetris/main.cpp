@@ -8,14 +8,15 @@
 #include "AI.h"
 #include "View.h"
 
-#include <memory>
-#include <vector>
-#include <stdio.h>
-#include <windows.h>
-#include <thread>
-
+#include <memory>		// this is for multithreading (not implemented)
+#include <vector>		// this is for std::vector
+#include <windows.h>	// this is for resizing command line
+#include <thread>		// this is for multithreading (not implemented)
 
 using namespace std;
+
+
+
 
 sf::Sprite tealBlockSprite;
 sf::Sprite yellowBlockSprite;
@@ -44,20 +45,16 @@ const float backgroundTxtOffsetY = -50.f;
 sf::RenderWindow window(sf::VideoMode(1260, 860), "Tetris AI clone");
 
 
-void drawNextTetromino()
-{
-	
-}
 
 void drawInterface()
 {
-	if (gameLogic->getScore() > 10000)
+	if (gameLogic->getScore() >= 10000)
 		scoreText.setPosition(sf::Vector2f(460.f, 560.f));
-	else if (gameLogic->getScore() > 1000)		  
+	else if (gameLogic->getScore() >= 1000)		  
 		scoreText.setPosition(sf::Vector2f(470.f, 560.f));
-	else if (gameLogic->getScore() > 100)		  
+	else if (gameLogic->getScore() >= 100)		  
 		scoreText.setPosition(sf::Vector2f(480.f, 560.f));
-	else if (gameLogic->getScore() > 10)		  
+	else if (gameLogic->getScore() >= 10)		  
 		scoreText.setPosition(sf::Vector2f(490.f, 560.f));
 	
 
@@ -66,9 +63,6 @@ void drawInterface()
 	
 	window.draw(scoreText);
 	window.draw(levelText);
-	window.draw(nextTetSprt);
-
-	drawNextTetromino();
 }
 
 // draws the current Tetromino with data from gamelogic
@@ -93,14 +87,14 @@ void drawCurrentTetro()
 				}
 				else if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 2)
 				{
-					window.draw(purpleBlockSprite);
 					purpleBlockSprite.setPosition(sf::Vector2f(gameLogic->getCurrentTetromino()->topLeft[1] * tileOffset + col * tileOffset + backgroundTxtOffsetX,
-																gameLogic->getCurrentTetromino()->topLeft[0] * tileOffset + row * tileOffset + backgroundTxtOffsetY));
+						gameLogic->getCurrentTetromino()->topLeft[0] * tileOffset + row * tileOffset + backgroundTxtOffsetY));
+					window.draw(purpleBlockSprite);
 				}
 				else if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 5)
 				{
 					greenBlockSprite.setPosition(sf::Vector2f(gameLogic->getCurrentTetromino()->topLeft[1] * tileOffset + col * tileOffset + backgroundTxtOffsetX,
-						gameLogic->getCurrentTetromino()->topLeft[0] * tileOffset + row * tileOffset + backgroundTxtOffsetY));
+															gameLogic->getCurrentTetromino()->topLeft[0] * tileOffset + row * tileOffset + backgroundTxtOffsetY));
 					window.draw(greenBlockSprite);
 
 				}
@@ -226,19 +220,15 @@ int main()
 
 	view = new View(&window);
 	view->setGameLogic(gameLogic);
+	view->setAI(ai);
 
-	ai->makeDecision(true);
-	ai->moveTetromino();
-	ai->makeDecision(false);
+	ai->initializeAI(true);
+
+
 	//Launch a thread
 	//thread threadAI(secondThreadAI);
 
 	bool AIisTurnedOn = true;
-
-	
-
-	/* initialize random seed: */
-	srand(time(NULL));
 
 
 	#pragma region sprites
@@ -405,16 +395,28 @@ int main()
 
 			if (AIisTurnedOn && !pause)
 			{
-				if (elapsed.asSeconds() >= 0.2f)
+				if (elapsed.asSeconds() >= 0.1f)
 				{
 					clock.restart();
 					//gameLogic->automaticDrop();
 
-					// returns true, if tetromino has landed. this also triggers spawning new tetrominos within gamelogic.cpp
-					if ( gameLogic->automaticDrop()) //gameLogic->dropAI()) // <--- might be more performant
+					if (gameLogic->getGeneticAlgorithmComputing())
 					{
-						// once the tetromino has landed, starting computation for next tetromino
-						ai->makeDecision(false);		
+						// returns true, if tetromino has landed. this also triggers spawning new tetrominos within gamelogic.cpp
+						if (gameLogic->dropAI())
+						{
+							// once the tetromino has landed, starting computation for next tetromino
+							ai->makeDecision(false);
+						}
+					}
+					else if (gameLogic->getFinishedAIPlays())
+					{
+						// returns true, if tetromino has landed. this also triggers spawning new tetrominos within gamelogic.cpp
+						if (gameLogic->automaticDrop())
+						{
+							// once the tetromino has landed, starting computation for next tetromino
+							ai->makeDecision(false);
+						}
 					}
 				}
 			}
@@ -440,9 +442,13 @@ int main()
 
 			view->drawNextTetro();
 
+			//if (gameLogic->getGeneticAlgorithmComputing())
+				view->drawInterface();
+
 			drawLandedArray();
 
 			drawInterface();
+			
 
 			drawAILandedArray();
 

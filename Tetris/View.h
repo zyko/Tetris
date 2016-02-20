@@ -4,6 +4,7 @@
 
 #include "GameLogic.h"
 
+#include <string>
 
 #include <SFML/Graphics.hpp>
 
@@ -21,6 +22,7 @@ private:
 	sf::Sprite gameOverSprt;
 
 	GameLogic* gameLogic;
+	AI* ai;
 
 
 
@@ -48,7 +50,8 @@ private:
 	sf::Texture OTetrominoPreviewTexture;
 	sf::Texture ZTetrominoPreviewTexture;
 
-
+	sf::Font font;
+	sf::Text parameterAItxt;
 
 	const float tileOffset = 40.f;
 	const float backgroundTxtOffsetX = 30.f;
@@ -58,17 +61,21 @@ private:
 
 	// functions
 
+	void drawAIinterface();
+
 public:
 
 	// variables
 
 	// functions
 
+	void drawInterface();
 	void drawNextTetro();
 
 	// setters
 
 	void setGameLogic(GameLogic* gl);
+	void setAI(AI* ai);
 
 	// constructor / destructor
 

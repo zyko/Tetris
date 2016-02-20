@@ -1,0 +1,4 @@
+The aggregate height parameter is: -0.51
+The complete lines parameter is: 0.76
+The holes parameter is: -0.35
+The bumpiness parameter is: -0.18
