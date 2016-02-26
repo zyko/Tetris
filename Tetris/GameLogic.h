@@ -18,6 +18,21 @@ private:
 
 	// variables:
 
+	/* GENETIC ALGORITHM */
+
+	/* define the art of program we're starting */
+	/* only one can be true at the same time */
+
+	bool finishedAIplays;
+	bool geneticAlgorithmComputing;
+	bool singlePlayer;
+
+	int totalGamesPlayed;
+
+
+	/* ----------------- */
+
+
 	const int invisibleTopLines = 2;
 	const int mapHeight = 22;
 	const int mapWidth = 10;
@@ -49,26 +64,14 @@ private:
 
 	void calculatingScore(int lines);
 	void setGameOver();
-	void checkForGameOver();
+	bool checkForGameOver();
 
 	void tetroHasLanded();
 
 
 public:
 
-	/* GENETIC ALGORITHM */
 
-	/* define the art of program we're starting */
-	/* only one can be true at the same time */
-
-	const bool finishedAIplays = false;
-	const bool geneticAlgorithmComputing = true;
-	const bool singlePlayer = false;
-
-	int totalGamesPlayed = 0;
-
-
-	/* ----------------- */
 
 	void checkForAIreset();
 
@@ -77,7 +80,7 @@ public:
 	// functions: 
 
 
-	void checkForCompletedLines(std::vector< std::vector<int> > *landedMatrix);
+	int checkForCompletedLines(std::vector< std::vector<int> > *landedMatrix);
 	void clearLine(int index, std::vector< std::vector<int> > *landedMatrix);
 
 
@@ -88,6 +91,8 @@ public:
 	void moveRight();
 	void moveLeft();
 	bool getGameOver();
+
+	void setGamePlay(int i);
 
 	/* GETTERS */
 

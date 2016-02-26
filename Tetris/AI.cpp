@@ -6,17 +6,79 @@ using namespace std;
 AI::AI(GameLogic* gl)
 {
 	gameLogic = gl;
-
-	//landedAI = gl->getLandedMatrix();
-
-	if (gameLogic->getGeneticAlgorithmComputing())
-		initializePopulation();
+	currentIndividualIndex = 0; // just use population.size() instead?
+	amountOfGAloops = 0;
 }
 
 // this is called at the very beginning of the game or when the game resets
 void AI::initializeAI(bool veryFirstMethodCall)
 {
 	landedAI = gameLogic->getLandedMatrix();
+
+	if (veryFirstMethodCall)
+	{
+		if (gameLogic->getGeneticAlgorithmComputing())
+		{
+			initializePopulation();
+			aggregateHeightParameter = population[0].aggregateHeightParameter;
+			completeLinesParameter = population[0].completeLinesParameter;
+			holesParameter = population[0].holesParameter;
+			bumpinessParameter = population[0].bumpinessParameter;
+		}
+		else if (gameLogic->getFinishedAIPlays())
+		{
+
+			float aggregateHeightParameterFromFile;
+			float completeLinesParameterFromFile;
+			float holesParameterFromFile;
+			float bumpinessParameterFromFile;
+
+
+			ifstream source;									// build a read-Stream
+
+			source.open("finalParameters.txt", ios_base::in);  // open data
+
+			if (!source)
+				printf("cannot open finalParameter.txt");
+
+			for (std::string line; std::getline(source, line);)   
+			{
+				std::istringstream in(line);      
+
+				std::string type;
+				in >> type;                 
+
+				if (type == "aggregateHeightParameter:") 
+				{
+					in >> aggregateHeightParameterFromFile; 
+					printf("loaded from file: %f \n", aggregateHeightParameterFromFile);
+				}
+				if (type == "completeLinesParameter:")  
+				{
+					in >> completeLinesParameterFromFile;    
+					printf("loaded from file: %f \n", completeLinesParameterFromFile);
+				}
+				else if (type == "holesParameter:")
+				{
+					in >> holesParameterFromFile;      
+					printf("loaded from file: %f \n", holesParameterFromFile);
+				}
+				else if (type == "bumpinessParameter:")
+				{
+					in >> bumpinessParameterFromFile; 
+					printf("loaded from file: %f \n", bumpinessParameterFromFile);
+				}
+			}
+			
+
+			aggregateHeightParameter	= aggregateHeightParameterFromFile;
+			completeLinesParameter		= completeLinesParameterFromFile;
+			holesParameter				= holesParameterFromFile;
+			bumpinessParameter			= bumpinessParameterFromFile;
+		}
+
+	}
+
 
 	makeDecision(true);
 	moveTetromino();
@@ -64,19 +126,6 @@ void AI::makeDecision(bool initialCall)
 	}
 
 	gameLogic->checkForCompletedLines(&landedAI);
-
-
-
-	/*
-	// DEBUGGING
-	printf("bottom LineTarget: %d \n", computedResults[0].bottomLineTarget);
-	printf("position: %d \n", computedResults[0].position);
-	// turn this off for a second
-	printf("---- BEST COMPUTATION VALUE ---- \n");
-	printf("maxVal: %f \n", computedResults[0].result);
-	printf("position: %d \n", computedResults[0].position);
-	printf("rotation: %d \n", computedResults[0].rotation);
-	*/
 }
 
 void AI::tryCurrentTet(bool initialCall)
@@ -264,29 +313,16 @@ void AI::dropTetromino(Tetromino* tet)
 
 void AI::startGeneticLoop()
 {
-
+	amountOfGAloops++;
 	while (offsprings.size() < maxOffspringsProduced)
 		chooseRandomIndividuals();
 
 	// produceOffspring is called by upper method
 
 	replaceWeakestPopulation();
-
-	/*	shit ain't workin
-		1st: check for dropped tetrominos
-		2nd: check for played games
-		3rd: */
-
-
-	/*	1st: for each individual in population play 10 games á 500 tetrominos or until game over
-		2nd: once finished with this, do that stuff with offsprings
-		3rd: return to 1.
-
-
-		todo: check for termination anywhere? :O
-	*/
 }
 
+// actually not only choosing random individuals, but also picking the best and triggering produceOffspring()
 void AI::chooseRandomIndividuals()
 {
 	/* choosing random individuals */
@@ -294,16 +330,16 @@ void AI::chooseRandomIndividuals()
 	std::random_device rd;
 	std::mt19937 mt(rd());
 
-	std::vector <int> debug;
+	std::vector <int> chosenIndividuals;
 
-	for (int i = 0; i < amountOfRandomIndividualsForReproducing; ++i)
-		debug.push_back(i);
+	/* creating new vector with shuffled integers from 0 - maxPopulation */
+	for (int i = 0; i < population.size(); ++i)
+		chosenIndividuals.push_back(i);
 
-	std::shuffle(debug.begin(), debug.end(), mt);
+	std::shuffle(chosenIndividuals.begin(), chosenIndividuals.end(), mt);
 
 
-
-	/* choose the 2 best out of the 100 random individuals */
+	/* choose the 2 best out of the "amountOfRandomIndividualsForReproducing" random individuals */
 
 	int bestIndividualIndex = 0;
 	int bestIndividualLines = 0;
@@ -312,45 +348,79 @@ void AI::chooseRandomIndividuals()
 	int secondBestIndividualLines = 0;
 
 
-	for (int i = 0; i < debug.size(); ++i)
+	for (int i = 0; i < amountOfRandomIndividualsForReproducing; ++i)
 	{
-		if (population[debug[i]].completedLines > bestIndividualLines)
+		if (population[chosenIndividuals[i]].completedLines > bestIndividualLines)
 		{
+
 			/* set former best to current 2nd best */
 			secondBestIndividualLines = bestIndividualLines;
 			secondBestIndividualIndex = bestIndividualIndex;
 
 			/* set best to current checked*/
-			bestIndividualLines = population[debug[i]].completedLines;
-			bestIndividualIndex = i;
+			bestIndividualLines = population[chosenIndividuals[i]].completedLines;
+			bestIndividualIndex = chosenIndividuals[i];
+
+
+		}	// this is for the case, that either there are 2 best individuals with same completedLines, or 1st in array is already best
+		else if (population[chosenIndividuals[i]].completedLines > secondBestIndividualLines)
+		{
+			secondBestIndividualLines = population[chosenIndividuals[i]].completedLines;
+			secondBestIndividualIndex = chosenIndividuals[i];
 		}
 	}
+
 
 	/* produce new offspring of the two parents picked */
 
 	produceOffspring(bestIndividualIndex, secondBestIndividualIndex);
-
-
-	/* DEBUG ONLY
-
-	printf("random numbers are:");
-	for (int i = 0; i < amountOfRandomIndividualsForReproducing; ++i)
-	printf("%d \n", debug[i]);
-	*/
-
 }
 
-// yet, implementation has to be finished
 void AI::produceOffspring(int parentAindex, int parentBindex)
 {
-	population[parentAindex];
-	population[parentBindex];
+
+	float newAggregateHeightParameter	= ((population[parentAindex].aggregateHeightParameter	+ population[parentBindex].aggregateHeightParameter ) / 2);
+	float newCompleteLinesParameter		= ((population[parentAindex].completeLinesParameter		+ population[parentBindex].completeLinesParameter	) / 2);
+	float newHolesParameter				= ((population[parentAindex].holesParameter				+ population[parentBindex].holesParameter			) / 2);
+	float newBumpinessParameter			= ((population[parentAindex].bumpinessParameter			+ population[parentBindex].bumpinessParameter		) / 2);
+
+
+	offsprings.push_back({ newAggregateHeightParameter, newCompleteLinesParameter, newHolesParameter, newBumpinessParameter });
+
+	mutate();
+}
+
+void AI::mutate()
+{
+	std::random_device rd;
+	std::mt19937 mt(rd());
+	std::uniform_real_distribution<float> dist1(0.0, 0.2);
+	std::uniform_real_distribution<float> dist2(0, 4);
+	std::uniform_real_distribution<float> dist3(0, 20);
+
+	int mutationChance = dist3(mt);
+	int parameterToMutate = dist2(mt);
+	float mutationValue = (round(dist1(mt) * 1000.f)) / 1000.f;
+
+	if (mutationChance == 1) // 5 % chance to mutate ( 1 I chose randomly, could take any number between 0 and 20 )
+	{
+		/* mutate either one of the parameters */
+
+		if (parameterToMutate == 1)
+			offsprings.back().aggregateHeightParameter += mutationValue;
+		if (parameterToMutate == 2)
+			offsprings.back().completeLinesParameter += mutationValue;
+		if (parameterToMutate == 3)
+			offsprings.back().holesParameter += mutationValue;
+		if (parameterToMutate == 4)
+			offsprings.back().bumpinessParameter += mutationValue;
+	}
 }
 
 void AI::replaceWeakestPopulation()
 {
 
-	/* delete the 100 weakest individuals from population */
+	/* delete the weakest individuals from population */
 
 	while (population.size() > (maxPopulation - maxOffspringsProduced))
 	{
@@ -431,14 +501,6 @@ void AI::saveLinesClearedToIndividual(int totalLinesCleared)
 	population[currentIndividualIndex].completedLines = totalLinesCleared;
 }
 
-// yet, there is still some implementation missing
-bool AI::isAlgorithmTerminating()
-{
-	// uhm, got u fucking clue?
-
-	return false;
-}
-
 void AI::initializePopulation()
 {
 	std::random_device rd;
@@ -450,27 +512,12 @@ void AI::initializePopulation()
 
 
 	for (int i = 0; i < maxPopulation; ++i)
-	{
 		population.push_back({ -dist1(mt), dist2(mt), -dist3(mt), -dist4(mt), 0 });
-	}
-
-
-	/* debug only */
-	//float a = dist1(mt);
-	//float aa = dist1(mt);
-	//float b = dist2(mt);
-	//float c = dist3(mt);
-	//float d = dist4(mt);
-
-	//printf("1st rnd number: %f \n", a);
-	//printf("2nd rnd number: %f \n", b);
-	//printf("3rd rnd number: %f \n", c);
-	//printf("4th rnd number: %f \n", d);
 }
 
 void AI::chooseNextIndividual()
 {
-	if (currentIndividualIndex < maxPopulation)
+	if (currentIndividualIndex < maxPopulation-1)
 	{
 		currentIndividualIndex++;
 
@@ -482,40 +529,8 @@ void AI::chooseNextIndividual()
 	else
 	{
 		startGeneticLoop();
+		currentIndividualIndex = 0;
 	}
-}
-
-// this is not yet called
-float AI::mutate()
-{
-	std::random_device rd;
-	std::mt19937 mt(rd());
-	std::uniform_real_distribution<float> dist1(0.0, 0.2);
-	std::uniform_real_distribution<float> dist2(0, 4);
-	std::uniform_real_distribution<float> dist3(0, 20);
-
-	int mutationChance		= dist3(mt);
-	int parameterToMutate	= dist2(mt);
-	float mutationValue		= (round (dist1(mt) * 1000.f) ) / 1000.f;
-
-	if (mutationChance == 13) // 5 % chance to mutate ( 13 is random, could take any number between 0 and 20 )
-	{
-		//debug:
-		printf("mutation has been triggered");
-		
-		/* mutate either one of the parameters */
-		
-		if (parameterToMutate == 1)
-			population.back().aggregateHeightParameter += mutationValue;
-		if (parameterToMutate == 2)
-			population.back().completeLinesParameter += mutationValue;
-		if (parameterToMutate == 3)
-			population.back().holesParameter += mutationValue;
-		if (parameterToMutate == 4)
-			population.back().bumpinessParameter += mutationValue;
-	}
-
-	return 1.f;
 }
 
 void AI::setParameters(float aggregateHeightParameter, float completeLinesParameter, float holesParameter, float bumpinessParameter)
@@ -526,20 +541,51 @@ void AI::setParameters(float aggregateHeightParameter, float completeLinesParame
 	this->bumpinessParameter		= bumpinessParameter;
 }
 
-// this is not yet called
+bool AI::isGAterminating()
+{
+	if (amountOfGAloops >= maxGAloops)
+	{
+		saveFinalParametersToFile();
+		return true;
+	}
+
+	return false;
+}
+
 void AI::saveFinalParametersToFile()
 {
+	float averageAggregateHeightParameter = 0;
+	float averageCompleteLinesParameter = 0;
+	float averageHolesParameter = 0;
+	float averageBumpinessParameter = 0;
+
+	for (int i = 0; i < population.size(); ++i)
+	{
+		averageAggregateHeightParameter	+= population[i].aggregateHeightParameter;
+		averageCompleteLinesParameter	+= population[i].completeLinesParameter;
+		averageHolesParameter			+= population[i].holesParameter;
+		averageBumpinessParameter		+= population[i].bumpinessParameter;
+	}
+
+	averageAggregateHeightParameter /= population.size();
+	averageCompleteLinesParameter	/= population.size();
+	averageHolesParameter			/= population.size();
+	averageBumpinessParameter		/= population.size();
+
+
 	ofstream myfile("finalParameters.txt");
 	if (myfile.is_open())
 	{
-		myfile << "The aggregate height parameter is: " << aggregateHeightParameter << endl;
-		myfile << "The complete lines parameter is: " << completeLinesParameter << endl;
-		myfile << "The holes parameter is: " << holesParameter << endl;
-		myfile << "The bumpiness parameter is: " << bumpinessParameter << endl;
+		myfile << "aggregateHeightParameter: " << averageAggregateHeightParameter << endl;
+		myfile << "completeLinesParameter: " << averageCompleteLinesParameter << endl;
+		myfile << "holesParameter: " << averageHolesParameter << endl;
+		myfile << "bumpinessParameter: " << averageBumpinessParameter << endl;
 
 		myfile.close();
 	}
 	else cout << "Unable to open file";
+
+	printf("final parameters have been saved to file");
 }
 
 
@@ -557,12 +603,10 @@ int AI::getMaxPopulation()
 {
 	return maxPopulation;
 }
-
 int AI::getCurrentIndividualIndex()
 {
 	return currentIndividualIndex;
 }
-
 std::vector<float> AI::getParameters()
 {
 	std::vector<float> parameters = { aggregateHeightParameter, completeLinesParameter, holesParameter, bumpinessParameter };
@@ -579,9 +623,9 @@ float AI::computation()
 	float computation = 0;
 
 	computation += (aggregateHeightParameter *	computeAggregateHeight());
-	computation += (completeLinesParameter *		computeCompleteLines());
-	computation += (holesParameter *		computeHoles());
-	computation += (bumpinessParameter *	computeBumpiness());
+	computation += (completeLinesParameter *	computeCompleteLines());
+	computation += (holesParameter *			computeHoles());
+	computation += (bumpinessParameter *		computeBumpiness());
 
 	return computation;
 
@@ -589,17 +633,26 @@ float AI::computation()
 
 int AI::computeAggregateHeight()
 {
+	int tmpCounter = 0;
 	int aggregateHeight = 0;
+
+
 	for (int col = 0; col < gameLogic->getMapWidth(); ++col)
-		for (int row = 0; row < gameLogic->getMapHeight(); ++row)
+	{
+		tmpCounter = 0;
+		for (int row = gameLogic->getMapHeight()-1; row > 0; --row)
+		{
+			tmpCounter++;
+
 			if (cpt[row][col] != 0)
 			{
-				aggregateHeight += gameLogic->getMapHeight() - row;
-				break;
+				aggregateHeight += tmpCounter;
+				tmpCounter = 0;
 			}
-	
+			
+		}
+	}
 
-	//printf("aggregateHeight: %d \n", aggregateHeight);
 	return aggregateHeight;
 }
 
@@ -641,34 +694,29 @@ int AI::computeBumpiness()
 	int bumpiness = 0;
 
 	int lastRowHeight = 0;
-	int currentRowHeight;
+	int currentRowHeight = 0;
 
 	for (int col = 0; col < gameLogic->getMapWidth(); ++col)
+	{
+		lastRowHeight = currentRowHeight;
+		currentRowHeight = 0;
+
 		for (int row = 0; row < gameLogic->getMapHeight(); ++row)
-			if (cpt[row][col] != 0 || (row == gameLogic->getMapHeight() - 1 && cpt[row][col] == 0))
-			{							// reaches ground
-				if (lastRowHeight != 0)
-				{
-					if (row == gameLogic->getMapHeight() - 1)
-						currentRowHeight = 0;
-					else
-						currentRowHeight = gameLogic->getMapHeight() - row;
-
-					bumpiness += abs(currentRowHeight - lastRowHeight);
-
-					lastRowHeight = currentRowHeight;
-
-				}
-				else
-					lastRowHeight = gameLogic->getMapHeight() - row;
-
+		{
+			if (cpt[row][col] != 0)
+			{
+				currentRowHeight = gameLogic->getMapHeight() - row;
 				break;
 			}
+		}
 
+		if (col == 0)
+			lastRowHeight = currentRowHeight;
+	
+		bumpiness += abs(currentRowHeight - lastRowHeight);
+	}
 
-	//printf("bumpiness: %d \n", bumpiness);
 	return bumpiness;
-
 }
 
 //-----------------

@@ -8,6 +8,8 @@
 #include <fstream>	// this is used for saving to data
 #include <time.h>	// this is used for random function
 #include <random>	// this is used for random function
+#include <sstream>	// this is for reading data from file
+
 
 class AI
 {
@@ -16,21 +18,20 @@ private:
 
 	/* THIS IS FOR THE GENETIC ALGORITHM */
 
-	float aggregateHeightParameter	= -0.51f;
-	float completeLinesParameter	=  0.76f;
-	float holesParameter			= -0.35f;
-	float bumpinessParameter		= -0.18f;
+	float aggregateHeightParameter;
+	float completeLinesParameter;
+	float holesParameter;
+	float bumpinessParameter;
 
+	const int maxGAloops									= 10;							// amount of loops, new offsprings are produced
+	const int maxPopulation									= 150;							// amount of individuals
+	const int totalGamesToBePlayedForOneIndividual			= 2;							// games to be played for computation
+	const int totalTetrominosToBeDroppedForOneIndividual	= 150;							// amount of tetrominos dropped in one game
+	const int amountOfRandomIndividualsForReproducing		= maxPopulation/ 10;			// choose 10 % random for producing offspring
+	const int maxOffspringsProduced							= (maxPopulation / 10 ) * 3;	// 30 % of maxPopulation will be new offsprings
 
-	const int totalGamesToBePlayedForOneIndividual			= 10;
-	const int totalTetrominosToBeDroppedForOneIndividual	= 100; // should be 500 or sth.
-	const int maxPopulation									= 1000; // means individuals is filled, until individuals.size() == maxPopulation
-	const int amountOfRandomIndividualsForReproducing		= maxPopulation / 10; // chose 10 % random for producing offspring
-	const int amountOfBestChosen							= 2; // choosing the best 2 out of the random chosen individuals
-	const int maxOffspringsProduced							= (maxPopulation / 10 ) * 3; // 30 % of maxPopulation will be new offsprings
-
-	int currentIndividualIndex = 0; // just use population.size() instead?
-
+	int currentIndividualIndex;
+	int amountOfGAloops;
 
 	struct individual
 	{
@@ -58,13 +59,12 @@ private:
 
 	void initializePopulation();
 	void chooseNextIndividual();
-	float mutate();
+	void mutate();
 	void chooseRandomIndividuals();
 	void chooseBestParents();
 	void produceOffspring(int parentAindex, int parentBindex);
 	void replaceWeakestPopulation();
 	void deleteWeakestIndividualFromPopulation();
-	bool isAlgorithmTerminating();
 
 	void startGeneticLoop();
 
@@ -131,6 +131,7 @@ private:
 	*/
 
 	float computation();
+
 	int computeAggregateHeight();
 	int computeCompleteLines();
 	int computeHoles();
@@ -145,6 +146,8 @@ public:
 	void resetLandedAI();
 	void moveTetromino();
 	
+	bool isGAterminating();
+
 	void makeDecision(bool initialCall);
 
 	

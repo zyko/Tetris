@@ -1,0 +1,4 @@
+aggregateHeightParameter: -0.557732
+completeLinesParameter: 0.479514
+holesParameter: -0.553933
+bumpinessParameter: -0.207991

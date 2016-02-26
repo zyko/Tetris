@@ -7,6 +7,12 @@ using namespace std;
 
 GameLogic::GameLogic()
 {
+	finishedAIplays				= false;
+	geneticAlgorithmComputing	= false;
+	singlePlayer				= false;
+
+	totalGamesPlayed = 0;
+
 	// initializing landed array
 	vector <int> tmp;
 	for (int i = 0; i < mapWidth; ++i)
@@ -18,33 +24,6 @@ GameLogic::GameLogic()
 	randomBag = { 0, 1, 2, 3, 4, 5, 6 };
 
 	initializeTetros();
-
-
-
-	// debug stuff
-
-	//
-	//for (int i = 19; i < mapHeight; ++i)
-	//	landed[i][0] = 1;
-	//for (int i = 17; i < mapHeight; ++i)
-	//	landed[i][1] = 1;
-	//for (int i = 17; i < mapHeight; ++i)
-	//	landed[i][2] = 1;
-	//for (int i = 17; i < mapHeight; ++i)
-	//	landed[i][3] = 1;
-	//for (int i = 16; i < mapHeight; ++i)
-	//	landed[i][4] = 1;
-	//for (int i = 16; i < mapHeight; ++i)
-	//	landed[i][5] = 1;
-	//for (int i = 17; i < mapHeight; ++i)
-	//	landed[i][6] = 1;
-	//for (int i = 18; i < mapHeight; ++i)
-	//	landed[i][7] = 1;
-	//for (int i = 18; i < mapHeight; ++i)
-	//	landed[i][8] = 1;
-	//
-	//landed[20][3] = 0;
-	//landed[18][3] = 0;
 }
 
 // this is called at the very beginning of the game and if game's restarting
@@ -76,7 +55,7 @@ void GameLogic::initializeTetros()
 
 }
 
-// drop method for AI // obsolet?
+// drop method for GA
 bool GameLogic::dropAI()
 {
 
@@ -86,9 +65,8 @@ bool GameLogic::dropAI()
 				if (currentTet->getShape()[row][col] != 0)
 					landed[row + currentTet->topLeft[0]][col + currentTet->topLeft[1]] = currentTet->getShape()[row][col];
 
-
-		tetroHasLanded();
-		return true;
+	tetroHasLanded();
+	return true;
 }
 
 
@@ -182,10 +160,12 @@ void GameLogic::firmDrop()
 void GameLogic::tetroHasLanded()
 {
 	firmDropped = true;
-	checkForCompletedLines(&landed);
-
+	int completedLines = checkForCompletedLines(&landed);
+	if (completedLines > 0)
+		calculatingScore(completedLines);
+	
 	if (geneticAlgorithmComputing)
-		if (ai->checkForReset(amountOfTetrominosDropped))
+		if (ai->checkForReset(amountOfTetrominosDropped) || checkForGameOver())
 			setGameOver();
 		else
 			spawningNewTetro();
@@ -193,7 +173,13 @@ void GameLogic::tetroHasLanded()
 	/* this is important to not spawn a new tetro when generic algorithm triggers a reset */
 
 	if (singlePlayer || finishedAIplays)
-		spawningNewTetro();	
+	{
+		if (checkForGameOver())
+			setGameOver();
+		else
+			spawningNewTetro();
+	}
+		
 }
 
 void GameLogic::spawningNewTetro()
@@ -206,8 +192,8 @@ void GameLogic::spawningNewTetro()
 		currentTet = nextTet;
 		nextTet = thirdTet;
 
-		
-		ai->moveTetromino();
+		if (!singlePlayer)
+			ai->moveTetromino();
 
 
 		/* initialize random seed: */
@@ -264,7 +250,7 @@ void GameLogic::rotate(int degreeIndicator)
 			}
 }
 
-void GameLogic::checkForCompletedLines(std::vector< std::vector<int> > *landedMatrix)
+int GameLogic::checkForCompletedLines(std::vector< std::vector<int> > *landedMatrix)
 {
 	int completedLinesCounter = 0;
 
@@ -279,12 +265,10 @@ void GameLogic::checkForCompletedLines(std::vector< std::vector<int> > *landedMa
 			clearLine(row, landedMatrix);
 			completedLinesCounter++;
 		}
-
 	}
-	if (completedLinesCounter != 0)
-		calculatingScore(completedLinesCounter);
 
-	checkForGameOver();
+	return completedLinesCounter;
+
 }
 
 void GameLogic::clearLine(int index, std::vector< std::vector<int> > *landedMatrix)
@@ -316,22 +300,23 @@ void GameLogic::calculatingScore(int lines)
 
 }
 
-void GameLogic::checkForGameOver()
+bool GameLogic::checkForGameOver()
 {
 	for (int col = 0; col < mapWidth; ++col)
 		if (landed[1][col] != 0)
-			setGameOver();
+			return true;
+	
+	return false;
 }
 
 void GameLogic::setGameOver()
 {
 	gameOver = true;
-	printf("GAME OVER! \n");
 	currentTet->~Tetromino();
 	nextTet->~Tetromino();
 	thirdTet->~Tetromino();
 
-	if (!singlePlayer)
+	if (!singlePlayer && !ai->isGAterminating())
 		resetGame();
 }
 
@@ -348,6 +333,9 @@ void GameLogic::resetGame()
 		for (int col = 0; col < mapWidth; ++col)
 			landed[row][col] = 0;
 
+
+
+
 	initializeTetros();
 	
 	ai->gameHasFinished(&totalLinesCleared, &totalGamesPlayed);
@@ -357,6 +345,7 @@ void GameLogic::resetGame()
 
 	gameOver = false;
 	amountOfTetrominosDropped = 0;
+	totalLinesCleared = 0;
 	level = 0;
 	score = 0;
 	
@@ -366,6 +355,17 @@ void GameLogic::resetGame()
 
 
 // SETTER
+
+void GameLogic::setGamePlay(int i)
+{
+	if (i == 1)
+		singlePlayer = true;
+	else if (i == 2)
+		finishedAIplays = true;
+	else if (i == 3)
+		geneticAlgorithmComputing = true;
+	
+}
 
 void GameLogic::setAI(AI* ai)
 {

@@ -3,59 +3,115 @@
 View::View(sf::RenderWindow* window)
 {
 	this->window = window;
+	gamePlayChosen = false;
 
+	if (!backgroundTxt.loadFromFile("Assets/background_630x860.png"))
+		printf("error while loading background texture \n");
+	backgroundSprt.setTexture(backgroundTxt);
 
-	sf::Texture gameOverTxt;
-	if (!gameOverTxt.loadFromFile("Assets/gameOver.png"))
+	if (!gameOverTxt.loadFromFile("Assets/gameOver_1260x860.png"))
 		printf("error while loading gameOver.png \n");
 	gameOverSprt.setTexture(gameOverTxt);
 
-
 	if (!font.loadFromFile("Fonts/courbd.ttf")) // this is courier new bold
 		printf("error while loading font \n");
+
+	if (!buttonTexture.loadFromFile("Assets/button2.png"))
+		printf("error while loading button texture");
+
+
+	singlePlayerButtonRect.setSize(sf::Vector2f(buttonTexture.getSize()));
+	singlePlayerButtonRect.setTexture(&buttonTexture);
+	singlePlayerButtonRect.setPosition((window->getSize().x / 2) - (singlePlayerButtonRect.getSize().x / 2), 200);
+	
+
+	finishedAIButtonRect.setSize(sf::Vector2f(buttonTexture.getSize()));
+	finishedAIButtonRect.setTexture(&buttonTexture);
+	finishedAIButtonRect.setPosition((window->getSize().x / 2) - (finishedAIButtonRect.getSize().x / 2), 400);
+
+	geneticAlgorithmButtonRect.setSize(sf::Vector2f(buttonTexture.getSize()));
+	geneticAlgorithmButtonRect.setTexture(&buttonTexture);
+	geneticAlgorithmButtonRect.setPosition((window->getSize().x / 2) - (geneticAlgorithmButtonRect.getSize().x / 2), 600);
+
+	singlePlayertxt.setString("single player");
+	singlePlayertxt.setFont(font);
+	singlePlayertxt.setCharacterSize(40);
+	singlePlayertxt.setColor(sf::Color::Black);
+	singlePlayertxt.setPosition(sf::Vector2f(singlePlayerButtonRect.getPosition().x + 60, singlePlayerButtonRect.getPosition().y + 50));
+
+	finishedAItxt.setString("finished AI");
+	finishedAItxt.setFont(font);
+	finishedAItxt.setCharacterSize(40);
+	finishedAItxt.setColor(sf::Color::Black);
+	finishedAItxt.setPosition(sf::Vector2f(finishedAIButtonRect.getPosition().x + 90, finishedAIButtonRect.getPosition().y + 50));
+
+	geneticAlgorithmtxt.setString("genetic algorithm");
+	geneticAlgorithmtxt.setFont(font);
+	geneticAlgorithmtxt.setCharacterSize(40);
+	geneticAlgorithmtxt.setColor(sf::Color::Black);
+	geneticAlgorithmtxt.setPosition(sf::Vector2f(geneticAlgorithmButtonRect.getPosition().x + 20, geneticAlgorithmButtonRect.getPosition().y + 50));
+
+
+	
+	singlePlayerInfotxt.setFont(font);
+	singlePlayerInfotxt.setCharacterSize(20);
+	singlePlayerInfotxt.setColor(sf::Color::Cyan);
+	singlePlayerInfotxt.setPosition(sf::Vector2f(640.f, 100.f));
+
 	parameterAItxt.setFont(font);
 	parameterAItxt.setCharacterSize(20);
-	parameterAItxt.setColor(sf::Color::Green);
+	parameterAItxt.setColor(sf::Color::Cyan);
 	parameterAItxt.setPosition(sf::Vector2f(640.f, 100.f));
+
+	headlinetxt.setString("choose your gameplay!");
+	headlinetxt.setFont(font);
+	headlinetxt.setCharacterSize(50);
+	headlinetxt.setColor(sf::Color::Cyan);
+	headlinetxt.setPosition(sf::Vector2f(75.f, 75.f));
 
 	#pragma region Tetromino sprites
 
-	sf::Texture redBlockTexture;
 	if (!redBlockTexture.loadFromFile("Assets/RedBlock_40x40.png"))
 		printf("error while loading redBlockTexture");
 	redBlockSprite.setTexture(redBlockTexture);
 
-	sf::Texture blueBlockTexture;
 	if (!blueBlockTexture.loadFromFile("Assets/BlueBlock_40x40.png"))
 		printf("error while loading blueBlockTexture");
 	blueBlockSprite.setTexture(blueBlockTexture);
 
-	sf::Texture greenBlockTexture;
 	if (!greenBlockTexture.loadFromFile("Assets/GreenBlock_40x40.png"))
 		printf("error while loading greenBlockTexture");
 	greenBlockSprite.setTexture(greenBlockTexture);
 
-	sf::Texture tealBlockTexture;
 	if (!tealBlockTexture.loadFromFile("Assets/TealBlock_40x40.png"))
 		printf("error while loading tealBlockTexture");
 	tealBlockSprite.setTexture(tealBlockTexture);
 
-	sf::Texture orangeBlockTexture;
 	if (!orangeBlockTexture.loadFromFile("Assets/OrangeBlock_40x40.png"))
 		printf("error while loading orangeBlockTexture");
 	orangeBlockSprite.setTexture(orangeBlockTexture);
 
-	sf::Texture yellowBlockTexture;
 	if (!yellowBlockTexture.loadFromFile("Assets/YellowBlock_40x40.png"))
 		printf("error while loading yellowBlockTexture");
 	yellowBlockSprite.setTexture(yellowBlockTexture);
 
-	sf::Texture purpleBlockTexture;
 	if (!purpleBlockTexture.loadFromFile("Assets/PurpleBlock_40x40.png"))
 		printf("error while loading purpleBlockTexture");
 	purpleBlockSprite.setTexture(purpleBlockTexture);
 
 	#pragma endregion
+
+
+	levelText.setFont(font);
+	levelText.setCharacterSize(40);
+	levelText.setColor(sf::Color::White);
+	levelText.setPosition(sf::Vector2f(500.f, 730.f));
+
+
+	scoreText.setFont(font);
+	scoreText.setCharacterSize(40);
+	scoreText.setColor(sf::Color::White);
+	scoreText.setPosition(sf::Vector2f(500.f, 560.f));
 
 	#pragma region Tetromino preview sprites
 
@@ -98,6 +154,11 @@ View::View(sf::RenderWindow* window)
 
 }
 
+void View::drawBackground()
+{
+	window->draw(backgroundSprt);
+}
+
 void View::drawNextTetro()
 {
 	int nextTetType = gameLogic->getNextTetromino()->getType();
@@ -123,8 +184,159 @@ void View::drawNextTetro()
 void View::drawInterface()
 {
 
-	drawAIinterface();
+	if (gameLogic->getScore() >= 10000)
+		scoreText.setPosition(sf::Vector2f(460.f, 560.f));
+	else if (gameLogic->getScore() >= 1000)
+		scoreText.setPosition(sf::Vector2f(470.f, 560.f));
+	else if (gameLogic->getScore() >= 100)
+		scoreText.setPosition(sf::Vector2f(480.f, 560.f));
+	else if (gameLogic->getScore() >= 10)
+		scoreText.setPosition(sf::Vector2f(490.f, 560.f));
+
+
+	scoreText.setString(std::to_string(gameLogic->getScore()));
+	levelText.setString(std::to_string(gameLogic->getLevel()));
+
+	window->draw(scoreText);
+	window->draw(levelText);
+
+
+	if (gameLogic->getFinishedAIPlays() || gameLogic->getGeneticAlgorithmComputing())
+		drawAIinterface();
 	
+	if (gameLogic->getSinglePlayer())
+		drawSinglePlayerInterface();
+}
+
+void View::drawGameOver()
+{
+	window->draw(gameOverSprt);
+}
+
+// draws landed array with data from gamelogic
+void View::drawLandedArray()
+{
+	for (int row = 0; row < gameLogic->getMapHeight(); ++row)
+		for (int col = 0; col < gameLogic->getMapWidth(); ++col)
+			if (gameLogic->getLandedMatrix()[row][col] == 6)
+			{
+				tealBlockSprite.setPosition(sf::Vector2f(col * tileOffset + backgroundTxtOffsetX, row * tileOffset + backgroundTxtOffsetY));
+				window->draw(tealBlockSprite);
+			}
+			else if (gameLogic->getLandedMatrix()[row][col] == 7)
+			{
+				yellowBlockSprite.setPosition(sf::Vector2f(col * tileOffset + backgroundTxtOffsetX, row * tileOffset + backgroundTxtOffsetY));
+				window->draw(yellowBlockSprite);
+
+			}
+			else if (gameLogic->getLandedMatrix()[row][col] == 2)
+			{
+				purpleBlockSprite.setPosition(sf::Vector2f(col * tileOffset + backgroundTxtOffsetX, row * tileOffset + backgroundTxtOffsetY));
+				window->draw(purpleBlockSprite);
+
+			}
+			else if (gameLogic->getLandedMatrix()[row][col] == 5)
+			{
+				greenBlockSprite.setPosition(sf::Vector2f(col * tileOffset + backgroundTxtOffsetX, row * tileOffset + backgroundTxtOffsetY));
+				window->draw(greenBlockSprite);
+
+			}
+			else if (gameLogic->getLandedMatrix()[row][col] == 4)
+			{
+				redBlockSprite.setPosition(sf::Vector2f(col * tileOffset + backgroundTxtOffsetX, row * tileOffset + backgroundTxtOffsetY));
+				window->draw(redBlockSprite);
+
+			}
+			else if (gameLogic->getLandedMatrix()[row][col] == 3)
+			{
+				blueBlockSprite.setPosition(sf::Vector2f(col * tileOffset + backgroundTxtOffsetX, row * tileOffset + backgroundTxtOffsetY));
+				window->draw(blueBlockSprite);
+
+			}
+			else if (gameLogic->getLandedMatrix()[row][col] == 1)
+			{
+				orangeBlockSprite.setPosition(sf::Vector2f(col * tileOffset + backgroundTxtOffsetX, row * tileOffset + backgroundTxtOffsetY));
+				window->draw(orangeBlockSprite);
+			}
+
+}
+
+void View::drawGamePlaySelection()
+{
+	window->draw(headlinetxt);
+	
+	window->draw(singlePlayerButtonRect);
+	window->draw(singlePlayertxt);
+	
+	window->draw(finishedAIButtonRect);
+	window->draw(finishedAItxt);
+	
+	window->draw(geneticAlgorithmButtonRect);
+	window->draw(geneticAlgorithmtxt);
+}
+
+// draws the current Tetromino with data from gamelogic
+void View::drawCurrentTetromino()
+{
+	if (!gameLogic->getGameOver())
+		for (int row = 0; row < 4; ++row)
+			for (int col = 0; col < 4; ++col)
+				if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 6)
+				{
+					tealBlockSprite.setPosition(sf::Vector2f(gameLogic->getCurrentTetromino()->topLeft[1] * tileOffset + col * tileOffset + backgroundTxtOffsetX,
+						gameLogic->getCurrentTetromino()->topLeft[0] * tileOffset + row * tileOffset + backgroundTxtOffsetY));
+					window->draw(tealBlockSprite);
+
+				}
+				else if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 7)
+				{
+
+					yellowBlockSprite.setPosition(sf::Vector2f(gameLogic->getCurrentTetromino()->topLeft[1] * tileOffset + col * tileOffset + backgroundTxtOffsetX,
+						gameLogic->getCurrentTetromino()->topLeft[0] * tileOffset + row * tileOffset + backgroundTxtOffsetY));
+					window->draw(yellowBlockSprite);
+				}
+				else if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 2)
+				{
+					purpleBlockSprite.setPosition(sf::Vector2f(gameLogic->getCurrentTetromino()->topLeft[1] * tileOffset + col * tileOffset + backgroundTxtOffsetX,
+						gameLogic->getCurrentTetromino()->topLeft[0] * tileOffset + row * tileOffset + backgroundTxtOffsetY));
+					window->draw(purpleBlockSprite);
+				}
+				else if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 5)
+				{
+					greenBlockSprite.setPosition(sf::Vector2f(gameLogic->getCurrentTetromino()->topLeft[1] * tileOffset + col * tileOffset + backgroundTxtOffsetX,
+						gameLogic->getCurrentTetromino()->topLeft[0] * tileOffset + row * tileOffset + backgroundTxtOffsetY));
+					window->draw(greenBlockSprite);
+
+				}
+				else if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 4)
+				{
+					redBlockSprite.setPosition(sf::Vector2f(gameLogic->getCurrentTetromino()->topLeft[1] * tileOffset + col * tileOffset + backgroundTxtOffsetX,
+						gameLogic->getCurrentTetromino()->topLeft[0] * tileOffset + row * tileOffset + backgroundTxtOffsetY));
+					window->draw(redBlockSprite);
+
+				}
+				else if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 3)
+				{
+					blueBlockSprite.setPosition(sf::Vector2f(gameLogic->getCurrentTetromino()->topLeft[1] * tileOffset + col * tileOffset + backgroundTxtOffsetX,
+						gameLogic->getCurrentTetromino()->topLeft[0] * tileOffset + row * tileOffset + backgroundTxtOffsetY));
+					window->draw(blueBlockSprite);
+
+				}
+				else if (gameLogic->getCurrentTetromino()->getShape()[row][col] == 1)
+				{
+					orangeBlockSprite.setPosition(sf::Vector2f(gameLogic->getCurrentTetromino()->topLeft[1] * tileOffset + col * tileOffset + backgroundTxtOffsetX,
+						gameLogic->getCurrentTetromino()->topLeft[0] * tileOffset + row * tileOffset + backgroundTxtOffsetY));
+					window->draw(orangeBlockSprite);
+
+				}
+}
+
+void View::drawSinglePlayerInterface()
+{
+	std::string info = "press D and F for rotations, space for hard drop\nand arrow keys for left / right";
+
+	singlePlayerInfotxt.setString(info);
+	window->draw(singlePlayerInfotxt);
 }
 
 void View::drawAIinterface()
@@ -147,22 +359,84 @@ void View::drawAIinterface()
 												+ " / " + std::to_string(ai->getTotalTetrominosToBeDroppedForOneIndividual());
 
 
-	std::string a = "\n\n currently tried parameters: \n";
-	std::string b = "\n aggregate height: ";
-	std::string c = std::to_string(aggregateHeightParameter);
-	std::string d = "\n complete lines:    ";
-	std::string e = std::to_string(completeLinesParameter);
-	std::string f = "\n holes:            ";
-	std::string g = std::to_string(holesParameter);
-	std::string h = "\n bumpiness:        ";
-	std::string i = std::to_string(bumpinessParameter);
+	std::string sParameters =	"\n\n currently tried parameters: \n\n aggregate height: " + std::to_string(aggregateHeightParameter)
+							+	"\n complete lines:    " + std::to_string(completeLinesParameter)
+							+	"\n holes:            " + std::to_string(holesParameter)
+							+	"\n bumpiness:        " + std::to_string(bumpinessParameter);
 
-	parameterAItxt.setString(individual + game + tetros + a + b + c + d + e + f + g + h + i);
+	parameterAItxt.setString(individual + game + tetros + sParameters);
 
 
 	window->draw(parameterAItxt);
 
+	/* drawing landedAI for debug reasons
+
+	for (int row = 0; row < gameLogic->getMapHeight(); ++row)
+		for (int col = 0; col < gameLogic->getMapWidth(); ++col)
+			if (ai->landedAI[row][col] != 0)
+			{
+				tealBlockSprite.setPosition(sf::Vector2f(col * tileOffset + backgroundTxtOffsetX + 600, row * tileOffset + backgroundTxtOffsetY));
+				window->draw(tealBlockSprite);
+			}
+	*/
+
+
+
 }
+
+void View::choseGamePlay(int mouseX, int mouseY)
+{
+	if (singlePlayerButtonRect.getGlobalBounds().contains(mouseX, mouseY))
+	{
+		gamePlayChosen = true;
+		gameLogic->setGamePlay(1);
+	}
+	else if (finishedAIButtonRect.getGlobalBounds().contains(mouseX, mouseY))
+	{
+		gamePlayChosen = true;
+		gameLogic->setGamePlay(2);
+		ai->initializeAI(true);
+
+	}
+	else if (geneticAlgorithmButtonRect.getGlobalBounds().contains(mouseX, mouseY))
+	{
+		gamePlayChosen = true;
+		gameLogic->setGamePlay(3);
+		ai->initializeAI(true);
+	}
+}
+
+void View::highlightButtons(int mouseX, int mouseY)
+{
+	if (singlePlayerButtonRect.getGlobalBounds().contains(mouseX, mouseY))
+	{
+		singlePlayertxt.setColor(sf::Color::Red);
+	}
+	else if (!singlePlayerButtonRect.getGlobalBounds().contains(mouseX, mouseY))
+	{
+		singlePlayertxt.setColor(sf::Color::Black);
+	}
+	if (finishedAIButtonRect.getGlobalBounds().contains(mouseX, mouseY))
+	{
+		finishedAItxt.setColor(sf::Color::Red);
+	}
+	else if (!finishedAIButtonRect.getGlobalBounds().contains(mouseX, mouseY))
+	{
+		finishedAItxt.setColor(sf::Color::Black);
+	}
+	if (geneticAlgorithmButtonRect.getGlobalBounds().contains(mouseX, mouseY))
+	{
+		geneticAlgorithmtxt.setColor(sf::Color::Red);
+	}
+	else if (!geneticAlgorithmButtonRect.getGlobalBounds().contains(mouseX, mouseY))
+	{
+		geneticAlgorithmtxt.setColor(sf::Color::Black);
+	}
+
+}
+
+
+/* SETTERS / GETTERS */
 
 void View::setGameLogic(GameLogic* gl)
 {
@@ -172,6 +446,11 @@ void View::setGameLogic(GameLogic* gl)
 void View::setAI(AI* ai)
 {
 	this->ai = ai;
+}
+
+bool View::isGamePlayChosen()
+{
+	return gamePlayChosen;
 }
 
 View::~View()
