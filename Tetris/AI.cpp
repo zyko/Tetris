@@ -144,7 +144,6 @@ void AI::tryCurrentTet(bool initialCall)
 	}
 
 
-	int counter = 0; // debug
 	computedResults.resize(1);
 
 	float maxCompVal = -std::numeric_limits<float>::max();
@@ -175,15 +174,6 @@ void AI::tryCurrentTet(bool initialCall)
 
 				hasLanded = false;
 
-				// debugging:
-				/* turn this off for a second
-
-				printf("--------------------\n");
-				printf("computation no: %d \n", counter++);
-				printf("rotation: %d \n", rotations);
-				printf("currentTet->topLeft[1]: %d \n", currentTet->topLeft[1]);
-				*/
-
 				// try next Tetromino as well with current landed matrix
 				// in this landed matrix, the current Tetromino we're trying should be landed
 				//std::vector< std::vector<int> > droppedCurrentMatrix = cpt;
@@ -212,9 +202,6 @@ float AI::tryNextTet(std::vector< std::vector<int> > droppedCurrentMatrix)
 	int maxRotations = 4;
 
 
-	int counter = 0; // debug
-
-
 	if (nextTet->getType() == 0 || nextTet->getType() == 4 || nextTet->getType() == 5) // Tetros 'I', 'S' and 'Z' have only 2 rotations
 		maxRotations = 2;
 	if (nextTet->getType() == 1)	// Tetro 'O' has only 1 rotation
@@ -231,11 +218,12 @@ float AI::tryNextTet(std::vector< std::vector<int> > droppedCurrentMatrix)
 				nextTet->topLeft[0] = 0;
 				nextTet->topLeft[1] = col - 2;
 
-				// todo: should actually be called
-				/*while (!hasLanded)
+				/* including second tetromino into comoputation
+				while (!hasLanded)
 				{
-				dropTetromino(nextTet);
-				}*/
+					dropTetromino(nextTet);
+				}
+				*/
 
 				float cmp = computation();
 

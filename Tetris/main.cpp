@@ -25,8 +25,8 @@ int main()
 
 	#pragma region set cmd size
 	COORD c;
-	c.X = 200; //  Zeichen/Zeile
-	c.Y = 1000; //  Zeilen
+	c.X = 200; 
+	c.Y = 1000;
 	SetConsoleScreenBufferSize(GetStdHandle(STD_OUTPUT_HANDLE), c);
 	#pragma endregion
 
@@ -52,8 +52,8 @@ int main()
 	if (!music.openFromFile("Sound/tetris_theme.wav"))
 		printf("ERROR while loading tetris_theme");
 
-	//music.play();
-	music.setVolume(20);
+	music.play();
+	music.setVolume(10);
 	music.setLoop(true);
 
 	#pragma endregion
@@ -139,8 +139,6 @@ int main()
 				{
 					if (elapsed.asSeconds() >= 0.1f)
 					{
-						//gameLogic->automaticDrop();
-
 						if (gameLogic->getGeneticAlgorithmComputing())
 						{
 							clock.restart();
@@ -182,16 +180,14 @@ int main()
 
 				#pragma endregion
 
-				/*
+				
 				view->drawCurrentTetromino();
 
 				view->drawNextTetro();
 
 				view->drawLandedArray();
 				
-
-
-				*/
+				
 
 				view->drawInterface();
 
